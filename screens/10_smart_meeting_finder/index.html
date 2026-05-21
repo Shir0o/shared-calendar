@@ -1,0 +1,449 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Smart Meeting Finder - SoftSchedule</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-tint": "#0061a5",
+                      "primary-fixed": "#d2e4ff",
+                      "event-purple": "#faf5ff",
+                      "on-secondary-fixed": "#001c37",
+                      "outline": "#707883",
+                      "inverse-on-surface": "#eef1f9",
+                      "secondary-fixed": "#d2e4ff",
+                      "surface-container": "#ebeef6",
+                      "surface-container-highest": "#e0e2ea",
+                      "surface": "#f8f9ff",
+                      "on-surface": "#181c21",
+                      "tertiary-container": "#ae6100",
+                      "on-primary-fixed-variant": "#00497e",
+                      "tertiary-fixed": "#ffdcc1",
+                      "on-secondary-container": "#405d80",
+                      "secondary": "#436083",
+                      "on-error-container": "#93000a",
+                      "inverse-surface": "#2d3137",
+                      "on-surface-variant": "#404752",
+                      "tertiary": "#8a4c00",
+                      "outline-variant": "#c0c7d4",
+                      "inverse-primary": "#a0caff",
+                      "on-primary-fixed": "#001c37",
+                      "on-tertiary-fixed": "#2e1500",
+                      "surface-container-high": "#e5e8f0",
+                      "on-tertiary": "#ffffff",
+                      "event-purple-text": "#581c87",
+                      "glass-white": "rgba(255, 255, 255, 0.65)",
+                      "surface-variant": "#e0e2ea",
+                      "surface-dim": "#d7dae2",
+                      "slate-muted": "#64748b",
+                      "on-primary-container": "#fdfcff",
+                      "secondary-container": "#b9d7ff",
+                      "on-primary": "#ffffff",
+                      "secondary-fixed-dim": "#abc9f1",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-fixed-variant": "#6c3a00",
+                      "background-light": "#f6f7f8",
+                      "surface-bright": "#f8f9ff",
+                      "primary-fixed-dim": "#a0caff",
+                      "on-error": "#ffffff",
+                      "on-tertiary-container": "#fffbff",
+                      "on-background": "#181c21",
+                      "surface-container-low": "#f1f3fb",
+                      "error-container": "#ffdad6",
+                      "error": "#ba1a1a",
+                      "primary": "#005ea1",
+                      "on-secondary": "#ffffff",
+                      "primary-container": "#0078ca",
+                      "background": "#f8f9ff",
+                      "tertiary-fixed-dim": "#ffb878",
+                      "on-secondary-fixed-variant": "#2b486a",
+                      "slate-text": "#0d151b"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "element-gap-sm": "0.5rem",
+                      "element-gap-md": "0.75rem",
+                      "container-padding": "2.5rem",
+                      "grid-gutter": "1px"
+              },
+              "fontFamily": {
+                      "label-caps": [
+                              "Outfit"
+                      ],
+                      "headline-lg": [
+                              "Outfit"
+                      ],
+                      "body-md": [
+                              "Outfit"
+                      ],
+                      "headline-md": [
+                              "Outfit"
+                      ],
+                      "body-sm": [
+                              "Outfit"
+                      ]
+              },
+              "fontSize": {
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "letterSpacing": "-0.015em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background-light');
+            font-family: 'Outfit', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.outline-variant');
+            border-radius: theme('borderRadius.full');
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.outline');
+        }
+    </style>
+</head>
+<body class="text-on-surface min-h-screen overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-container-padding h-16 bg-glass-white/65 dark:bg-surface-container/65 backdrop-blur-xl border-b border-outline-variant/20 shadow-sm">
+<div class="flex items-center gap-element-gap-md">
+<span class="font-headline-lg text-headline-lg text-primary dark:text-primary-fixed tracking-tight">SoftSchedule</span>
+</div>
+<nav class="hidden md:flex gap-8 items-center h-full">
+<a class="text-on-surface-variant dark:text-outline hover:text-primary hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors font-headline-md text-headline-md h-full flex items-center px-4 border-b-2 border-transparent" href="#">Calendar</a>
+<a class="text-primary dark:text-primary-fixed font-headline-md text-headline-md h-full flex items-center px-4 border-b-2 border-primary dark:border-primary-fixed" href="#">Team</a>
+<a class="text-on-surface-variant dark:text-outline hover:text-primary hover:bg-surface-container-low dark:hover:bg-surface-container-highest transition-colors font-headline-md text-headline-md h-full flex items-center px-4 border-b-2 border-transparent" href="#">Analytics</a>
+</nav>
+<div class="flex items-center gap-4">
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<button class="bg-[#2b93ee] hover:bg-primary text-white px-4 py-2 rounded-xl font-body-md text-body-md transition-colors scale-95 active:scale-90 transition-transform hidden sm:block">
+                Create Event
+            </button>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/20 bg-surface-container-high flex-shrink-0 cursor-pointer">
+<img alt="User profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCZwosva4VBnjOZ57onDRkbjo1QlgVOS1C8VwSfPJxc8jjTPcwagsy_Q10IeXI9q6WvCHcGRpzc1Mx2b6z6u_g1DFMorIyKtUu5gKux7oh9yR6UAMzUSbRstuSsfC5rD5G-RMd-qxCkzYXrC-sPuHtdmMK6L_AOFewmtcTxIyfylE-Yhp-7zDFwzXcp_Qoy9YSOduLv-ZqYNXMhFhSBf158710N3IP7fc2F1b88f0IaetqzYj_hi9IP2kE-C3eGVIUPkMjQXh5JFWu">
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 bottom-0 w-[320px] z-40 p-4 flex flex-col bg-white/65 backdrop-blur-xl border-r border-slate-200 shadow-sm hidden md:flex">
+    <!-- Workspace Header -->
+    <div class="mb-8 px-4 mt-4">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center border border-slate-200 overflow-hidden">
+                <img alt="Project Alpha" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKNhN5w4kBY3SW4_V4IMZsfS2KwUI7SAS6hRNvzbxJ6JiykjDOiNeSRzMzw3-O2UIraA0Jo5KFzGpMhAdm657uWJrT56Sk7ARdWZn3hHOtJuDTjI3f6_T5bYtEuNFpAmDpaQLlhrVhLGSAr698js1f3FLguMARAJGUWE0mcM_vXtQbpOs_viuiWUQnrz4CodWEWV05GtlZS5um3G7MrTTVg1PKNXZNcq72evhhG0czRPHEKYx8KrPYX9YXrJQXfuFyBuwOyc0Jgi6H">
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-slate-900 leading-tight">Project Alpha</h2>
+                <p class="text-sm text-slate-500">Scheduling Engine</p>
+            </div>
+        </div>
+        <button class="w-full bg-primary hover:bg-blue-600 text-white py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95">
+            <span class="material-symbols-outlined text-xl">add</span>
+            New Request
+        </button>
+    </div>
+
+    <!-- Primary Navigation -->
+    <nav class="flex-1 flex flex-col gap-1">
+        <a class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-primary rounded-xl font-semibold transition-all scale-[1.02] shadow-sm" href="#">
+            <span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+            <span class="">Optimal Slots</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white/50 rounded-xl transition-all hover:scale-[1.02] hover:text-slate-900 group" href="#">
+            <span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600 text-xl">groups</span>
+            <span class="font-medium">Team Availability</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white/50 rounded-xl transition-all hover:scale-[1.02] hover:text-slate-900 group" href="#">
+            <span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600 text-xl">meeting_room</span>
+            <span class="font-medium">Meeting Rooms</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white/50 rounded-xl transition-all hover:scale-[1.02] hover:text-slate-900 group" href="#">
+            <span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600 text-xl">history</span>
+            <span class="font-medium">History</span>
+        </a>
+    </nav>
+
+    <!-- Footer Navigation -->
+    <div class="mt-auto pt-4 border-t border-slate-100 flex flex-col gap-1">
+        <a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-white/50 rounded-xl transition-all hover:text-slate-800" href="#">
+            <span class="material-symbols-outlined text-slate-400 text-xl">help_outline</span>
+            <span class="text-xs font-semibold uppercase tracking-wider">Help Center</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:bg-white/50 rounded-xl transition-all hover:text-slate-800" href="#">
+            <span class="material-symbols-outlined text-slate-400 text-xl">person</span>
+            <span class="text-xs font-semibold uppercase tracking-wider">Account</span>
+        </a>
+    </div>
+</aside>
+<!-- Main Content -->
+<main class="pt-24 pb-12 px-4 md:pl-[360px] md:pr-container-padding min-h-screen">
+<div class="max-w-7xl mx-auto h-full flex flex-col lg:flex-row gap-6">
+<!-- Left Column: Criteria Panel -->
+<div class="w-full lg:w-[340px] flex-shrink-0">
+<div class="glass-card rounded-[24px] p-6 sticky top-24 shadow-sm">
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">tune</span>
+                        Meeting Criteria
+                    </h1>
+<div class="space-y-6">
+<!-- Preferred Days -->
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-3">Preferred Days</label>
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 font-body-sm text-body-sm hover:bg-primary/20 transition-colors">Mon</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container text-on-surface border border-outline-variant/30 font-body-sm text-body-sm hover:bg-surface-container-high transition-colors">Tue</button>
+<button class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 font-body-sm text-body-sm hover:bg-primary/20 transition-colors">Wed</button>
+<button class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 font-body-sm text-body-sm hover:bg-primary/20 transition-colors">Thu</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container text-on-surface border border-outline-variant/30 font-body-sm text-body-sm hover:bg-surface-container-high transition-colors">Fri</button>
+</div>
+</div>
+<!-- Time Window -->
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-3">Time Window</label>
+<div class="bg-surface-container-low rounded-xl p-4 border border-outline-variant/20">
+<div class="flex justify-between font-body-sm text-body-sm text-on-surface mb-2">
+<span class="">9:00 AM</span>
+<span class="">5:00 PM</span>
+</div>
+<div class="h-2 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary mx-8 rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Duration -->
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-3">Duration</label>
+<select class="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-2.5 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:border-transparent outline-none appearance-none">
+<option>30 Minutes</option>
+<option selected="">1 Hour</option>
+<option>1.5 Hours</option>
+<option>2 Hours</option>
+</select>
+</div>
+<!-- Attendees -->
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-3">Required Attendees</label>
+<div class="flex -space-x-2 mb-3">
+<img alt="Attendee 1" class="w-8 h-8 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyhal2HpPvJ2u8NCrInpGi0fdSLaHoWhQfNw6yNbO3C6CW8oDrAN--yOTIpMlvtTNI0hxytdITSQagku6Fzrh-JO8CsuyadPwqr0EBP_2MFihnDQgpHZiuYmOgwfSL8JMafD9aF2sginWqG-eHVJuocrgfXAF-Wmo3FSMFVztvvgCndQHEL0E_r5E6ub0D7Xj94yVe3nwGrZB3fPKXgdYqrX2QjdHnuhZHpI3bsA_9pwO_F_SsB3jeTzV1DKToVgDCOFkmvxI6zwec">
+<img alt="Attendee 2" class="w-8 h-8 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAu-lZDkixZHMtSbScfAOzaqTg0i8XlugjEvH9YGM3Wl0ijpgndTPVDNcZPOVGShLMoM0UuDJ6R9E1o2_zlbC1uKLf6WcyCUR8UwwjhGeGkuD8iwKMrFhufWNXO4g4V3z7eWcaz1qNdWQP7UY7Uee74UcpseSB09QshTaNvHNDOFWvyZNIlMfc5xZedxLXMPqxYUHxSlkBkz_L01_05B3DebMg2CNLEnE5fRKW4yGZxY9VSnpCSEmQx32YpLu8v6SL_w0ktl0cFegMM">
+<img alt="Attendee 3" class="w-8 h-8 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC87axllGZqzn9X8HVnkNxxFa3bAQfxeiGxoZYtaIgx5teGPX1LYYObeSStZX-NjHni5Kpk5rPXgfxMkNIhzxtktrO7sdkz9VYQzLF7LgoGDLcChTlOkSatc8CsWR1NUKXhxgRnhCsSw9bUjDYfwtZbU1z0oCffW19jagDUkwjPEKvJ0FYXyZjdKE1O7Bo-5JJR-LI6kHD79rnARx1c0iY1KQogd0amsl-4G0vLqlkGuQpyWk7S68GNU3_djBD5rTN97yGZEqth293w">
+<img alt="Attendee 4" class="w-8 h-8 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwYpNPNrlOdn_TUtrDb8BnGzAso005bGEH62vCPb8-lnJLgrB72NmAjdtQjG-IAMdAjBfuBhEd9qaBWZh69r8IP0lkFADXTp_df-pXHY0rc2tKA3BcptFc8yI6uGGeICRsl2r4rp3tSrjxlqVa71LWgMCou5HyvJzEG6xnaaz_zNm3mWjERAntIh56_uMdDcAwvR6v3g_PG_D2ZPCO9dDycZe5FxHmGs8xythwVX0LHWQezbqqh7jxpKIbOYAUMFrBw2PTm_x6bP1a">
+<div class="w-8 h-8 rounded-full border-2 border-white bg-surface-container-high flex items-center justify-center font-body-sm text-body-sm text-on-surface-variant">+2</div>
+</div>
+<button class="text-primary font-body-sm text-body-sm flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-[16px]">edit</span> Edit Attendees
+                            </button>
+</div>
+</div>
+<div class="mt-8 pt-6 border-t border-outline-variant/20">
+<button class="w-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface py-2.5 rounded-xl font-body-md text-body-md transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">refresh</span>
+                             Reset Criteria
+                         </button>
+</div>
+</div>
+</div>
+<!-- Right Column: Results -->
+<div class="flex-1">
+<div class="mb-6 flex justify-between items-end">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Available Slots</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Found 12 optimal times based on your criteria.</p>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-white rounded-lg border border-outline-variant/30 font-body-sm text-body-sm flex items-center gap-2 shadow-sm hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]">sort</span> Sort: Best Match
+                        </button>
+</div>
+</div>
+<div class="space-y-4">
+<!-- Result Card 1 -->
+<div class="glass-card rounded-[16px] p-5 hover:shadow-md transition-shadow duration-300 group border border-primary/20 bg-primary/5">
+<div class="flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center">
+<div class="flex-1 w-full">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-10 h-10 rounded-lg bg-white shadow-sm flex flex-col items-center justify-center border border-outline-variant/20">
+<span class="font-label-caps text-[10px] text-error leading-tight">OCT</span>
+<span class="font-headline-md text-[16px] text-on-surface leading-tight">17</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Tuesday, 10:00 AM - 11:00 AM</h3>
+<div class="flex items-center gap-2 mt-1"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-green-100 text-green-800 font-body-sm text-[11px] font-semibold ring-1 ring-green-200">
+                                <span class="material-symbols-outlined text-[14px] fill-1">check_circle</span> 100% Match
+                            </span>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px] text-primary/60">info</span>
+                                All 6 members are available and prefer mornings
+                            </span></div>
+</div>
+</div>
+<!-- Mini Timeline -->
+<div class="mt-4 flex items-center gap-2">
+<span class="font-label-caps text-[10px] text-on-surface-variant w-8">9 AM</span>
+<div class="flex-1 h-3 bg-surface-container-high rounded-full flex overflow-hidden">
+<div class="w-1/4 bg-surface-container-highest"></div>
+<div class="w-1/4 bg-[#C3B1E1] border-x-2 border-white"></div>
+<div class="w-2/4 bg-surface-container-highest"></div>
+</div>
+<span class="font-label-caps text-[10px] text-on-surface-variant w-8 text-right">1 PM</span>
+</div>
+</div>
+<button class="w-full sm:w-auto px-6 py-2.5 bg-[#6B8EAD] hover:bg-secondary text-white rounded-xl font-body-md text-body-md transition-colors shadow-sm scale-95 active:scale-90 transition-transform flex-shrink-0">
+                                Select Slot
+                            </button>
+</div>
+</div>
+<!-- Result Card 2 -->
+<div class="glass-card rounded-[16px] p-5 hover:shadow-md transition-shadow duration-300 group">
+<div class="flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center">
+<div class="flex-1 w-full">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-10 h-10 rounded-lg bg-white shadow-sm flex flex-col items-center justify-center border border-outline-variant/20">
+<span class="font-label-caps text-[10px] text-error leading-tight">OCT</span>
+<span class="font-headline-md text-[16px] text-on-surface leading-tight">17</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Tuesday, 2:30 PM - 3:30 PM</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="font-body-sm text-body-sm text-on-surface-variant">All 6 members free</span>
+</div>
+</div>
+</div>
+<!-- Mini Timeline -->
+<div class="mt-4 flex items-center gap-2">
+<span class="font-label-caps text-[10px] text-on-surface-variant w-8">1 PM</span>
+<div class="flex-1 h-3 bg-surface-container-high rounded-full flex overflow-hidden">
+<div class="w-3/8 bg-surface-container-highest"></div>
+<div class="w-2/8 bg-primary-fixed border-x-2 border-white"></div>
+<div class="w-3/8 bg-surface-container-highest"></div>
+</div>
+<span class="font-label-caps text-[10px] text-on-surface-variant w-8 text-right">5 PM</span>
+</div>
+</div>
+<button class="w-full sm:w-auto px-6 py-2.5 bg-white border border-[#6B8EAD] text-[#6B8EAD] hover:bg-[#6B8EAD]/10 rounded-xl font-body-md text-body-md transition-colors shadow-sm scale-95 active:scale-90 transition-transform flex-shrink-0">
+                                Select Slot
+                            </button>
+</div>
+</div>
+<!-- Result Card 3 -->
+<div class="glass-card rounded-[16px] p-5 hover:shadow-md transition-shadow duration-300 group ring-1 ring-amber-200 bg-amber-50/30">
+<div class="flex flex-col sm:flex-row gap-6 justify-between items-start sm:items-center">
+<div class="flex-1 w-full">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-10 h-10 rounded-lg bg-white shadow-sm flex flex-col items-center justify-center border border-outline-variant/20">
+<span class="font-label-caps text-[10px] text-error leading-tight">OCT</span>
+<span class="font-headline-md text-[16px] text-on-surface leading-tight">19</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Thursday, 11:00 AM - 12:00 PM</h3>
+<div class="flex items-center gap-2 mt-1"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-body-sm text-[11px] font-semibold ring-1 ring-amber-300 animate-pulse">
+                                <span class="material-symbols-outlined text-[14px] fill-1">warning</span> Conflict Detected
+                            </span>
+                            <span class="font-body-sm text-body-sm text-amber-800">
+                                John is in <b>'Product Sync'</b> (Tentative)
+                            </span></div>
+</div>
+</div>
+<!-- Mini Timeline -->
+<div class="mt-4 flex items-center gap-2">
+<span class="font-label-caps text-[10px] text-on-surface-variant w-8">9 AM</span>
+<div class="flex-1 h-3 bg-surface-container-high rounded-full flex overflow-hidden">
+<div class="w-2/4 bg-surface-container-highest"></div>
+<div class="w-1/4 bg-yellow-200 border-x-2 border-white"></div>
+<div class="w-1/4 bg-surface-container-highest"></div>
+</div>
+<span class="font-label-caps text-[10px] text-on-surface-variant w-8 text-right">1 PM</span>
+</div>
+</div>
+<button class="w-full sm:w-auto px-6 py-2.5 bg-white border border-[#6B8EAD] text-[#6B8EAD] hover:bg-[#6B8EAD]/10 rounded-xl font-body-md text-body-md transition-colors shadow-sm scale-95 active:scale-90 transition-transform flex-shrink-0">
+                                Select Slot
+                            </button>
+</div>
+</div>
+</div>
+<div class="mt-8 text-center">
+<button class="text-primary font-body-md text-body-md hover:underline flex items-center justify-center gap-2 mx-auto">
+                        Load More Slots <span class="material-symbols-outlined text-[18px]">expand_more</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+
+
+
+
+</body></html>

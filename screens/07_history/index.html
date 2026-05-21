@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SoftSchedule - History</title>
+<!-- Google Fonts: Outfit -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Timeline grid line simulation */
+        .timeline-grid {
+            background-image: linear-gradient(to right, transparent 0%, transparent 40px, var(--color-surface-container-high) 40px, var(--color-surface-container-high) 41px, transparent 41px);
+        }
+    </style>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed-dim": "#a0caff",
+                        "inverse-primary": "#a0caff",
+                        "event-purple-text": "#581c87",
+                        "on-secondary-fixed-variant": "#2b486a",
+                        "primary-container": "#0078ca",
+                        "surface-container-low": "#f1f3fb",
+                        "tertiary-fixed-dim": "#ffb878",
+                        "secondary-fixed": "#d2e4ff",
+                        "tertiary": "#8a4c00",
+                        "tertiary-fixed": "#ffdcc1",
+                        "on-surface-variant": "#404752",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed-variant": "#00497e",
+                        "surface-dim": "#d7dae2",
+                        "on-tertiary-fixed-variant": "#6c3a00",
+                        "error-container": "#ffdad6",
+                        "inverse-surface": "#2d3137",
+                        "background": "#f8f9ff",
+                        "tertiary-container": "#ae6100",
+                        "secondary-fixed-dim": "#abc9f1",
+                        "slate-muted": "#64748b",
+                        "surface-container": "#ebeef6",
+                        "primary-fixed": "#d2e4ff",
+                        "on-tertiary": "#ffffff",
+                        "slate-text": "#0d151b",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#c0c7d4",
+                        "on-secondary-container": "#405d80",
+                        "outline": "#707883",
+                        "primary": "#005ea1",
+                        "error": "#ba1a1a",
+                        "on-primary-container": "#fdfcff",
+                        "glass-white": "rgba(255, 255, 255, 0.65)",
+                        "secondary": "#436083",
+                        "surface": "#f8f9ff",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#eef1f9",
+                        "surface-container-highest": "#e0e2ea",
+                        "surface-container-high": "#e5e8f0",
+                        "surface-variant": "#e0e2ea",
+                        "surface-container-lowest": "#ffffff",
+                        "event-purple": "#faf5ff",
+                        "secondary-container": "#b9d7ff",
+                        "background-light": "#f6f7f8",
+                        "on-primary-fixed": "#001c37",
+                        "on-tertiary-fixed": "#2e1500",
+                        "surface-bright": "#f8f9ff",
+                        "on-background": "#181c21",
+                        "surface-tint": "#0061a5",
+                        "on-secondary-fixed": "#001c37",
+                        "on-surface": "#181c21",
+                        "on-tertiary-container": "#fffbff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "2.5rem",
+                        "element-gap-sm": "0.5rem",
+                        "grid-gutter": "1px",
+                        "element-gap-md": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Outfit"],
+                        "label-caps": ["Outfit"],
+                        "headline-md": ["Outfit"],
+                        "body-md": ["Outfit"],
+                        "body-sm": ["Outfit"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background-light font-body-md text-body-md text-slate-text min-h-screen antialiased selection:bg-secondary-fixed selection:text-on-secondary-fixed">
+<!-- TopAppBar Component -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-container-padding h-16 bg-glass-white/65 backdrop-blur-xl border-b border-outline-variant/20 shadow-sm font-headline-md text-headline-md font-body-md text-body-md">
+<div class="flex items-center gap-8">
+<!-- Brand Logo -->
+<a class="text-headline-lg font-headline-lg text-primary tracking-tight scale-95 active:scale-90 transition-transform" href="#">
+                SoftSchedule
+            </a>
+<!-- Navigation Links (Web only, inactive) -->
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-on-surface-variant hover:text-primary transition-colors py-2" href="#">Calendar</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors py-2" href="#">Team</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors py-2" href="#">Analytics</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<!-- Search Bar Area -->
+<div class="hidden lg:flex items-center bg-surface-container-low rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary-container transition-all shadow-sm">
+<span class="material-symbols-outlined text-outline text-[20px] mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 p-0 text-body-md text-slate-text w-48 placeholder-slate-muted" placeholder="Search events..." type="text"/>
+</div>
+<!-- Trailing Icon Actions -->
+<button aria-label="notifications" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button aria-label="settings" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<!-- Trailing Primary Action -->
+<button class="bg-[#2b93ee] hover:bg-primary-container text-on-primary font-body-sm text-body-sm rounded-xl px-4 py-2 h-[40px] shadow-sm scale-95 active:scale-90 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                Create Event
+            </button>
+<!-- Profile Image -->
+<img alt="User profile" class="w-8 h-8 rounded-full border border-outline-variant/30 object-cover cursor-pointer hover:ring-2 hover:ring-primary transition-all" data-alt="A close-up portrait of a professional individual in a brightly lit, modern office environment. The lighting is soft and high-key, complementing the crisp, minimalist aesthetic of the SoftSchedule interface. Subtle slate and blue tones are present in the blurred background, reinforcing the corporate yet approachable brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAE6cNQ3SlUdINsX_5_-i1Yd1Db-TfKHoI5tWAyZL2Mf9M8RTEnMcSJhYYudWTsA2a3s6-CVtlBySDc0OdInKG35IDeSbzxlQl9_NrezdaoaMi6KjlqhgP0xQYYXeFHQuUSjpLqY5gZNuDuw3ixK3GdeGIXsvVrb-zh9a8Y8h_9zHInuUhE91EarhrvraA8zdIit20_Vm1f0LGUdVUKbOk9ZkbajcIyHqbfRRGsZbGGltAGw_zkBtaR2t-8ZN5e8jBvz2NOHcSihOJl"/>
+</div>
+</header>
+<!-- SideNavBar Component -->
+<nav class="hidden md:flex fixed left-0 top-16 bottom-0 w-[320px] z-40 p-element-gap-md flex-col bg-glass-white/65 backdrop-blur-xl border-r border-outline-variant/20 shadow-sm font-headline-md text-headline-md font-body-md text-body-md font-label-caps text-label-caps">
+<!-- Header Section -->
+<div class="px-4 py-6 mb-2">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-primary">workspaces</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-slate-text">Project Alpha</h2>
+<p class="font-body-sm text-body-sm text-slate-muted">Scheduling Engine</p>
+</div>
+</div>
+<button class="w-full bg-slate-100 hover:bg-surface-container-high text-slate-text font-body-sm text-body-sm rounded-xl py-2.5 flex items-center justify-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit_calendar</span>
+                New Request
+            </button>
+</div>
+<!-- Main Tabs -->
+<div class="flex-1 flex flex-col gap-1">
+<a class="text-on-surface-variant hover:bg-white/40 rounded-xl px-4 py-3 flex items-center gap-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-sm active:scale-98" href="#">
+<span class="material-symbols-outlined text-[20px]">auto_awesome</span>
+<span class="font-body-md text-body-md">Optimal Slots</span>
+</a>
+<a class="text-on-surface-variant hover:bg-white/40 rounded-xl px-4 py-3 flex items-center gap-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-sm active:scale-98" href="#">
+<span class="material-symbols-outlined text-[20px]">groups</span>
+<span class="font-body-md text-body-md">Team Availability</span>
+</a>
+<a class="text-on-surface-variant hover:bg-white/40 rounded-xl px-4 py-3 flex items-center gap-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-sm active:scale-98" href="#">
+<span class="material-symbols-outlined text-[20px]">meeting_room</span>
+<span class="font-body-md text-body-md">Meeting Rooms</span>
+</a>
+<!-- Active Tab -->
+<a class="bg-white/80 shadow-sm text-primary rounded-xl scale-[1.02] px-4 py-3 flex items-center gap-3 transition-all duration-300 active:scale-98" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="font-body-md text-body-md font-medium">History</span>
+</a>
+</div>
+<!-- Footer Tabs -->
+<div class="mt-auto pt-4 border-t border-outline-variant/20 flex flex-col gap-1">
+<a class="text-on-surface-variant hover:bg-white/40 rounded-xl px-4 py-3 flex items-center gap-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-sm active:scale-98" href="#">
+<span class="material-symbols-outlined text-[20px]">help_outline</span>
+<span class="font-body-md text-body-md">Help Center</span>
+</a>
+<a class="text-on-surface-variant hover:bg-white/40 rounded-xl px-4 py-3 flex items-center gap-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-sm active:scale-98" href="#">
+<span class="material-symbols-outlined text-[20px]">person</span>
+<span class="font-body-md text-body-md">Account</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area (History Canvas) -->
+<main class="md:ml-[320px] pt-16 min-h-screen">
+<div class="p-container-padding max-w-5xl mx-auto">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-slate-text mb-2">Meeting History</h1>
+<p class="font-body-md text-body-md text-slate-muted">Review past engagements and sync outcomes across your team.</p>
+</div>
+<!-- Filters -->
+<div class="flex items-center gap-2 bg-surface-container-low p-1 rounded-xl shadow-sm">
+<button class="px-4 py-1.5 rounded-lg bg-white shadow-sm font-body-sm text-body-sm text-primary transition-colors">All</button>
+<button class="px-4 py-1.5 rounded-lg text-slate-muted hover:text-slate-text font-body-sm text-body-sm transition-colors">Completed</button>
+<button class="px-4 py-1.5 rounded-lg text-slate-muted hover:text-slate-text font-body-sm text-body-sm transition-colors">Canceled</button>
+</div>
+</div>
+<!-- Timeline Feed -->
+<div class="relative timeline-grid pl-10 md:pl-16">
+<!-- Month Group 1 -->
+<div class="mb-12 relative">
+<!-- Month Marker -->
+<div class="absolute -left-10 md:-left-16 top-1 w-20 flex justify-end pr-6">
+<span class="font-label-caps text-label-caps text-slate-muted">OCT '23</span>
+</div>
+<div class="flex flex-col gap-4">
+<!-- History Card 1 -->
+<div class="group relative bg-white/60 backdrop-blur-md rounded-xl p-5 border border-outline-variant/10 shadow-sm hover:scale-[1.01] hover:shadow-md hover:bg-white transition-all duration-300 cursor-pointer">
+<!-- Timeline node dot -->
+<div class="absolute -left-[25px] top-7 w-3 h-3 rounded-full bg-surface-container-highest border-2 border-background-light group-hover:bg-primary transition-colors"></div>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex gap-4 items-start">
+<div class="bg-surface-container px-3 py-2 rounded-lg text-center min-w-[64px]">
+<span class="block font-headline-md text-headline-md text-slate-text">24</span>
+<span class="block font-label-caps text-label-caps text-slate-muted">TUE</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h3 class="font-headline-md text-[16px] text-slate-text">Q4 Roadmap Sync</h3>
+<span class="material-symbols-outlined text-[16px] text-slate-muted">videocam</span>
+</div>
+<p class="font-body-sm text-body-sm text-slate-muted mb-2">10:00 AM - 11:30 AM • Systemic Conference Room</p>
+<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-event-purple/40 text-event-purple-text font-body-sm text-[11px] border border-event-purple-text/10">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                            Completed
+                                        </div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<!-- Avatar Stack -->
+<div class="flex -space-x-2 overflow-hidden">
+<img alt="" class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover" data-alt="A close-up portrait of a young female professional smiling warmly. High-key lighting, bright minimalist office background, subtle muted slate tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVbMC4FdGFV9nngjhXvS0Ck5wfNEeOLM6qg_Mp7N-WdW3B-EH5Zc3Il4zMwMbFzuhQNzQZgA4ZpPRKhjqIJ9jQoXtxY04Dx5AMCOdhei8PRoxy2cY8tLAgLsS9wuK6DYcXfqJiNz7mo4TA7d7q_3GZfqQWFPRCY9MZVasuiRyEEmFF1Ozp94pIW1_PpFWQQVb38TM-YIgeXiECurtEWI6UvSTygNU72RpiWsUReJF4r45qFxqGJKB8frB0gvtsbt6zu4AfuY9aX8kn"/>
+<img alt="" class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover" data-alt="A portrait of a male professional looking thoughtful. Bright, airy lighting typical of modern corporate photography, against a soft gray background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYwhKws2jwrcRN-TjN-Etnk7sEKHBO0iWaMXfxZ6kfIIp7g9-cFVH1h-4NX2BvlVI_Oi0WWt8IgyWS_HY67cafiDoibdPRIn45upGpRCzcc5nPYBN4LVvGX3fH9rjEBp7-8KO0GZlLUAJDV2oaloyeztzrSxEKua7WRl6dLhtvhTCFMQUW18YDE63CQ-oMyAd3dRz2SRG41YhfayPpeNw_V4j2_qzfGKKuAZYhQqimF-q2H7kP3JOkBrTeAUkoVyNN5jpV0_Wkgy3D"/>
+<img alt="" class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover" data-alt="A friendly male professional in a light-colored shirt. Photographed in a bright, modern light-mode style setting with subtle depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1d1Aqn9yWJrze2Jgpw5kIFAPevedlDFW4l4Hn0UxKB1wSF8wVny_Ue08IFjumMCn9q8Uc0CLr3MA90Fd0-h1ALlOtvmtZEStSvQxLSyWgT19p4guq8XlBXO2T66WlMAL2uVpjZYosgflwYvR5nPFkuWduFjdB7rkqxGUBa5keSxHwE_dOFJyHXtGvTqZatoXtxlNbAknetD6uq2J1r3KGTyHv8JgKznQdyKa5tgWkno2wqfqZbBOmjQPGRo4yhW15SpUvo7fEsZTO"/>
+</div>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-slate-muted hover:bg-surface-container hover:text-slate-text transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- History Card 2 -->
+<div class="group relative bg-white/60 backdrop-blur-md rounded-xl p-5 border border-outline-variant/10 shadow-sm hover:scale-[1.01] hover:shadow-md hover:bg-white transition-all duration-300 cursor-pointer">
+<div class="absolute -left-[25px] top-7 w-3 h-3 rounded-full bg-surface-container-highest border-2 border-background-light group-hover:bg-slate-400 transition-colors"></div>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 opacity-75 hover:opacity-100 transition-opacity">
+<div class="flex gap-4 items-start">
+<div class="bg-surface-container px-3 py-2 rounded-lg text-center min-w-[64px]">
+<span class="block font-headline-md text-headline-md text-slate-text">18</span>
+<span class="block font-label-caps text-label-caps text-slate-muted">WED</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h3 class="font-headline-md text-[16px] text-slate-text line-through decoration-slate-muted/50">Design System Review</h3>
+<span class="material-symbols-outlined text-[16px] text-slate-muted">groups</span>
+</div>
+<p class="font-body-sm text-body-sm text-slate-muted mb-2">2:00 PM - 3:00 PM • Virtual</p>
+<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-surface-container-high text-on-surface-variant font-body-sm text-[11px] border border-outline-variant/30">
+<span class="material-symbols-outlined text-[14px]">event_busy</span>
+                                            Canceled
+                                        </div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2 overflow-hidden">
+<div class="h-8 w-8 rounded-full ring-2 ring-white bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-label-caps text-[10px]">
+                                            +4
+                                        </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Month Group 2 -->
+<div class="mb-12 relative">
+<div class="absolute -left-10 md:-left-16 top-1 w-20 flex justify-end pr-6">
+<span class="font-label-caps text-label-caps text-slate-muted">SEP '23</span>
+</div>
+<div class="flex flex-col gap-4">
+<!-- History Card 3 -->
+<div class="group relative bg-white/60 backdrop-blur-md rounded-xl p-5 border border-outline-variant/10 shadow-sm hover:scale-[1.01] hover:shadow-md hover:bg-white transition-all duration-300 cursor-pointer">
+<div class="absolute -left-[25px] top-7 w-3 h-3 rounded-full bg-surface-container-highest border-2 border-background-light group-hover:bg-primary transition-colors"></div>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex gap-4 items-start">
+<div class="bg-surface-container px-3 py-2 rounded-lg text-center min-w-[64px]">
+<span class="block font-headline-md text-headline-md text-slate-text">28</span>
+<span class="block font-label-caps text-label-caps text-slate-muted">THU</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h3 class="font-headline-md text-[16px] text-slate-text">Client Kickoff: Alpha</h3>
+<span class="material-symbols-outlined text-[16px] text-slate-muted">call</span>
+</div>
+<p class="font-body-sm text-body-sm text-slate-muted mb-2">9:00 AM - 10:00 AM • External Call</p>
+<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-event-purple/40 text-event-purple-text font-body-sm text-[11px] border border-event-purple-text/10">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                            Completed
+                                        </div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2 overflow-hidden">
+<img alt="" class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover" data-alt="Portrait of a female professional with short hair, engaging expression. Shot in a bright, modern environment with soft, diffused white light and minimal shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfrxr7PeT5IbfvyglY9RxUiX8XJK8NrL9BIW9eo-WD_A42ya__x9AsIfPWVihBQR0HFKWWC2IKTv3H6t8TdSLLn8-_H8ZbEUVXOlkW-MmrgXqZ94mKUMvruDROzzrDSmzopVyu0m587jyCno0i6F_VZOgyFpulgq72iYoxwmDBlWGJyU9IAvs7pffQdGxLH3eaGiaIifabUx0ue0HfF3i4lhdvKMJfKBRXc-8NnqGj6MsoA3Ldpv8f8ryAKd4MqbbZGy_WOgvQYcr4"/>
+</div>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-slate-muted hover:bg-surface-container hover:text-slate-text transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Load More -->
+<div class="flex justify-center mt-8 pb-12">
+<button class="px-6 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-slate-text font-body-sm text-body-sm transition-colors shadow-sm">
+                        Load Older Events
+                    </button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

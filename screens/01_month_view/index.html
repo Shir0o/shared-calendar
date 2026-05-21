@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Soft Systemic Team Calendar - Month View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "primary": "#2b93ee",
+          "background-light": "#f6f7f8",
+          "background-dark": "#101a22",
+        },
+        fontFamily: {
+          "display": ["Outfit", "sans-serif"]
+        },
+        borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+      },
+    },
+  }
+</script>
+<style>
+  /* Base custom styles for specific drag/drop interaction hints and scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+  }
+  .glass-panel {
+    background-color: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .event-pill {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .event-pill:hover {
+    transform: scale(1.02);
+    box-shadow: 0 16px 48px rgba(44, 62, 80, 0.08);
+    z-index: 20;
+    cursor: grab;
+  }
+  .event-pill:active {
+    cursor: grabbing;
+  }
+</style>
+</head>
+<body class="bg-background-light font-display text-slate-800 antialiased h-screen w-full overflow-hidden flex flex-col">
+<!-- Top App Bar -->
+<header class="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 shrink-0 z-20">
+<div class="flex items-center gap-8">
+<!-- Brand -->
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-xl">event_available</span>
+</div>
+<h1 class="text-xl font-bold text-slate-900 tracking-tight">SoftSchedule</h1>
+</div>
+<!-- Navigation Links -->
+<nav class="hidden md:flex items-center gap-1">
+<a class="px-4 py-2 rounded-lg bg-blue-50 text-primary font-semibold text-sm" href="#">Calendar</a>
+<a class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium text-sm transition-colors" href="#">Team</a>
+<a class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 font-medium text-sm transition-colors" href="#">Analytics</a>
+</nav>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-blue-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+            Create Event
+        </button>
+<div class="w-9 h-9 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden">
+<img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSixidcqAwX0KBPkWpOc4Hyp_SzlFFlx0ebWe4ApmZREZCnmhV1xAB-XrmyXerhhZTRNkLffe_GSMUCXWTbk6GLBAhB09V7fb49OgaZIAJpQ3JKwb78PkQubB4Nj0sedZUW6tkb1Ze0H_jCPjg31sAZScRIxpKMnZLVIbmnS1k089nWg4WjLhdyQ85o0jtZp1_Xl5UwDYAYszWe7FO0uPHkyPqSJev1PM2DzpSFFJEf8C05r190e83MxcsWhufOtq6HGfdhY_VJIBi"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Side Nav Bar -->
+<aside class="w-64 bg-white border-r border-slate-200 shrink-0 flex flex-col py-6 px-4 z-10">
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600 text-xl">auto_awesome</span>
+<span class="font-medium text-sm">Optimal Slots</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-50 text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-primary text-xl">group</span>
+<span class="font-semibold text-sm">Team Availability</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600 text-xl">meeting_room</span>
+<span class="font-medium text-sm">Meeting Rooms</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600 text-xl">history</span>
+<span class="font-medium text-sm">History</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 border-t border-slate-100">
+<button class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+<span class="font-medium text-sm flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400 text-xl">settings</span>
+                     Settings
+                 </span>
+</button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Left Pane: Calendar Area -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative z-0">
+<!-- Shared TopNavBar Header (Exact Structure Preserved) -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 px-10 py-3 bg-white/50 backdrop-blur-sm z-10">
+<div class="flex items-center gap-4 text-[#0d151b]">
+<div class="size-4">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M12.0799 24L4 19.2479L9.95537 8.75216L18.04 13.4961L18.0446 4H29.9554L29.96 13.4961L38.0446 8.75216L44 19.2479L35.92 24L44 28.7521L38.0446 39.2479L29.96 34.5039L29.9554 44H18.0446L18.04 34.5039L9.95537 39.2479L4 28.7521L12.0799 24Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-[#0d151b] text-lg font-bold leading-tight tracking-[-0.015em]">October 2023</h2>
+</div>
+<div class="flex gap-2">
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 bg-slate-100 hover:bg-slate-200 transition-colors text-[#0d151b] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+<div class="text-[#0d151b]" data-icon="CaretLeft" data-size="20px" data-weight="regular">
+<svg fill="currentColor" height="20px" viewbox="0 0 256 256" width="20px" xmlns="http://www.w3.org/2000/svg">
+<path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
+</svg>
+</div>
+</button>
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 bg-slate-100 hover:bg-slate-200 transition-colors text-[#0d151b] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+<div class="text-[#0d151b]" data-icon="CaretRight" data-size="20px" data-weight="regular">
+<svg fill="currentColor" height="20px" viewbox="0 0 256 256" width="20px" xmlns="http://www.w3.org/2000/svg">
+<path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"></path>
+</svg>
+</div>
+</button>
+</div>
+</header>
+<!-- View Toggles -->
+<div class="flex justify-between items-center px-10 py-4 bg-transparent shrink-0">
+<div class="flex flex-1 gap-3 flex-wrap justify-end">
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] shadow-sm">
+<span class="truncate">Month</span>
+</button>
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-sm font-bold leading-normal tracking-[0.015em]">
+<span class="truncate">List</span>
+</button>
+</div>
+</div>
+<!-- Calendar Grid Area -->
+<div class="flex-1 flex flex-col px-10 pb-10 min-h-0 overflow-hidden">
+<!-- Days of Week -->
+<div class="grid grid-cols-7 gap-px mb-2 shrink-0">
+<div class="text-xs font-semibold text-slate-400 uppercase tracking-wider text-center py-2">Sun</div>
+<div class="text-xs font-semibold text-slate-400 uppercase tracking-wider text-center py-2">Mon</div>
+<div class="text-xs font-semibold text-slate-400 uppercase tracking-wider text-center py-2">Tue</div>
+<div class="text-xs font-semibold text-slate-400 uppercase tracking-wider text-center py-2">Wed</div>
+<div class="text-xs font-semibold text-slate-400 uppercase tracking-wider text-center py-2">Thu</div>
+<div class="text-xs font-semibold text-slate-400 uppercase tracking-wider text-center py-2">Fri</div>
+<div class="text-xs font-semibold text-slate-400 uppercase tracking-wider text-center py-2">Sat</div>
+</div>
+<!-- Grid 7x5 -->
+<div class="flex-1 grid grid-cols-7 grid-rows-5 gap-px bg-slate-200 rounded-2xl overflow-hidden shadow-sm border border-slate-200">
+<!-- Row 1 -->
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">1</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">2</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">3</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">4</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">5</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">6</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">7</div></div>
+<!-- Row 2 -->
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">8</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">9</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">10</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">11</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">12</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group">
+<div class="text-right text-sm font-medium text-slate-400 mb-1">13</div>
+<div class="event-pill h-6 rounded-lg bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs text-slate-700 font-medium truncate flex items-center shadow-sm">
+                    Product Review
+                  </div>
+</div>
+<!-- Current Day Marker -->
+<div class="bg-blue-50/30 p-2 flex flex-col gap-1 hover:bg-blue-50/50 transition-colors relative group">
+<div class="flex justify-end mb-1">
+<div class="flex items-center justify-center size-7 rounded-full bg-primary text-white text-sm font-bold shadow-sm">14</div>
+</div>
+<div class="event-pill h-6 rounded-lg bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs text-slate-700 font-medium truncate flex items-center shadow-sm">
+                    Design Sync
+                  </div>
+<div class="event-pill h-6 rounded-lg bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs text-slate-700 font-medium truncate flex items-center shadow-sm">
+                    1:1 w/ Sarah
+                  </div>
+</div>
+<!-- Row 3 -->
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">15</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">16</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">17</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">18</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">19</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group">
+<div class="text-right text-sm font-medium text-slate-400 mb-1">20</div>
+<div class="event-pill h-6 rounded-lg bg-slate-100 border border-slate-200 px-2 py-0.5 text-xs text-slate-700 font-medium truncate flex items-center shadow-sm">
+                    Team Standup
+                  </div>
+</div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">21</div></div>
+<!-- Row 4 -->
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">22</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">23</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">24</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group">
+<div class="text-right text-sm font-medium text-slate-400 mb-1">25</div>
+<div class="event-pill h-6 rounded-lg bg-purple-50 border border-purple-100 px-2 py-0.5 text-xs text-purple-900 font-medium truncate flex items-center shadow-sm">
+                    Q4 Planning Offsite
+                  </div>
+</div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group">
+<div class="text-right text-sm font-medium text-slate-400 mb-1">26</div>
+<div class="event-pill h-6 rounded-lg bg-purple-50 border border-purple-100 px-2 py-0.5 text-xs text-purple-900 font-medium truncate flex items-center shadow-sm opacity-60">
+                    Cont. Offsite
+                  </div>
+</div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">27</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">28</div></div>
+<!-- Row 5 -->
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">29</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">30</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-400">31</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-300">1</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-300">2</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-300">3</div></div>
+<div class="bg-background-light p-2 flex flex-col gap-1 hover:bg-slate-50 transition-colors relative group"><div class="text-right text-sm font-medium text-slate-300">4</div></div>
+</div>
+</div>
+</main>
+<!-- Right Pane: Glass Sidebar Agenda (25%, fixed max-width) -->
+<aside class="w-[320px] h-full shrink-0 glass-panel border-l border-white/60 shadow-[-8px_0_32px_rgba(0,0,0,0.02)] flex flex-col z-10 relative">
+<!-- Sidebar Header -->
+<div class="px-6 py-8 border-b border-slate-200/50 shrink-0">
+<h3 class="text-xl font-bold text-slate-800 tracking-tight">Agenda</h3>
+<p class="text-sm text-slate-500 mt-1">Upcoming team syncs</p>
+</div>
+<!-- Scrollable Agenda Content -->
+<div class="flex-1 overflow-y-auto px-4 py-6 space-y-8">
+<!-- Today Section -->
+<section>
+<h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 px-2">Today, Oct 14</h4>
+<div class="space-y-2">
+<!-- Agenda Item -->
+<button class="w-full text-left flex items-start gap-3 p-3 rounded-xl hover:bg-white/80 transition-colors group">
+<div class="w-12 shrink-0 text-xs font-medium text-slate-400 pt-0.5 group-hover:text-primary transition-colors">
+                      10:00 AM
+                    </div>
+<div class="flex-1 min-w-0">
+<div class="text-sm font-semibold text-slate-800 truncate">Design Sync</div>
+<div class="text-xs text-slate-500 mt-0.5 truncate">Zoom Room A</div>
+</div>
+</button>
+<!-- Agenda Item -->
+<button class="w-full text-left flex items-start gap-3 p-3 rounded-xl hover:bg-white/80 transition-colors group">
+<div class="w-12 shrink-0 text-xs font-medium text-slate-400 pt-0.5 group-hover:text-primary transition-colors">
+                      2:30 PM
+                    </div>
+<div class="flex-1 min-w-0">
+<div class="text-sm font-semibold text-slate-800 truncate">1:1 w/ Sarah</div>
+<div class="text-xs text-slate-500 mt-0.5 truncate">Cafeteria</div>
+</div>
+</button>
+</div>
+</section>
+<!-- Tomorrow Section -->
+<section>
+<h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 px-2">Tomorrow, Oct 15</h4>
+<div class="space-y-2">
+<!-- Agenda Item -->
+<button class="w-full text-left flex items-start gap-3 p-3 rounded-xl hover:bg-white/80 transition-colors group">
+<div class="w-12 shrink-0 text-xs font-medium text-slate-400 pt-0.5 group-hover:text-primary transition-colors">
+                      11:00 AM
+                    </div>
+<div class="flex-1 min-w-0">
+<div class="text-sm font-semibold text-slate-800 truncate">Product Review</div>
+<div class="text-xs text-slate-500 mt-0.5 truncate">Main Boardroom</div>
+</div>
+</button>
+</div>
+</section>
+</div>
+<!-- Quick Add Button at bottom of sidebar (Moved to top nav, but leaving original for structural fidelity if needed, user didn't say remove, but did say add topbar button) -->
+<div class="p-6 shrink-0 border-t border-slate-200/50 bg-white/30 backdrop-blur-md hidden">
+<button class="w-full flex items-center justify-center gap-2 h-12 rounded-xl bg-primary hover:bg-blue-500 transition-colors text-white font-medium shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                New Event
+              </button>
+</div>
+</aside>
+</div>
+</div>
+</body></html>
