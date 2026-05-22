@@ -1,292 +1,288 @@
-import React, { useState } from 'react';
-import type { CalendarEvent } from '../types';
+// Month view — primary view. Dense, no scroll on day cells.
+// Supports drag-to-reschedule (admins only), hover preview, conflict badges, click to open.
+import {
+  CAT_BY_ID,
+  MONTH_SHORT,
+  DAY_SHORT,
+  monthGrid,
+  startOfDay,
+  addDays,
+  sameDay,
+  eventEnd,
+  eventOnDay,
+  fmtTime,
+  MS_DAY,
+  type CalendarEvent,
+} from '../lib/calendar';
+import { Icon } from '../components/ui';
+import type { HoverPayload, MorePayload } from '../types';
 
 interface MonthViewProps {
+  cursor: Date;
   events: CalendarEvent[];
-  currentDate: Date;
-  setCurrentDate: (date: Date) => void;
-  onDateClick: (dateStr: string) => void;
-  onEventClick: (event: CalendarEvent) => void;
+  conflicts: Map<string, number>;
+  onPickEvent: (ev: CalendarEvent) => void;
+  onPickMore: (payload: MorePayload) => void;
+  onMoveEvent: (id: string, day: Date) => void;
+  onCreateAt: (date: Date) => void;
+  density: string;
+  showWeekends: boolean;
+  canDrag: boolean;
+  setHoverEvent: (h: HoverPayload | null) => void;
 }
 
-export const MonthView: React.FC<MonthViewProps> = ({
-  events,
-  currentDate,
-  setCurrentDate,
-  onDateClick,
-  onEventClick
-}) => {
-  const [selectedDateStr, setSelectedDateStr] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+export const MonthView = ({ cursor, events, conflicts, onPickEvent, onPickMore, onMoveEvent, onCreateAt, density, showWeekends, canDrag, setHoverEvent }: MonthViewProps) => {
+  const cells = monthGrid(cursor, 1);
+  const today = startOfDay(new Date());
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
+  const weeks: Date[][] = [];
+  for (let w = 0; w < 6; w++) weeks.push(cells.slice(w * 7, w * 7 + 7));
 
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  // Helper to construct calendar days
-  const startOfMonth = new Date(year, month, 1);
-  const endOfMonth = new Date(year, month + 1, 0);
-  const startDayOfWeek = startOfMonth.getDay(); // 0 (Sun) to 6 (Sat)
-  const daysInMonth = endOfMonth.getDate();
-  const prevMonthEnd = new Date(year, month, 0).getDate();
-
-  const days: { dateStr: string; dayNum: number; isCurrentMonth: boolean }[] = [];
-
-  // Previous month padding
-  for (let i = startDayOfWeek - 1; i >= 0; i--) {
-    const prevYear = month === 0 ? year - 1 : year;
-    const prevMonth = month === 0 ? 11 : month - 1;
-    const day = prevMonthEnd - i;
-    days.push({
-      dateStr: `${prevYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-      dayNum: day,
-      isCurrentMonth: false
-    });
-  }
-
-  // Current month days
-  for (let i = 1; i <= daysInMonth; i++) {
-    days.push({
-      dateStr: `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`,
-      dayNum: i,
-      isCurrentMonth: true
-    });
-  }
-
-  // Next month padding to fill grid
-  const totalCells = days.length > 35 ? 42 : 35;
-  const nextMonthDaysToAdd = totalCells - days.length;
-  for (let i = 1; i <= nextMonthDaysToAdd; i++) {
-    const nextYear = month === 11 ? year + 1 : year;
-    const nextMonth = month === 11 ? 0 : month + 1;
-    days.push({
-      dateStr: `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`,
-      dayNum: i,
-      isCurrentMonth: false
-    });
-  }
-
-  // Change month handlers
-  const handlePrevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
-  };
-
-  const handleNextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
-
-  // Get events on a specific date (dateStr: YYYY-MM-DD)
-  const getEventsForDate = (dateStr: string) => {
-    return events.filter(event => event.start.startsWith(dateStr));
-  };
-
-  // Format date helper for agenda
-  const formatAgendaDate = (dateStr: string) => {
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  };
-
-  const selectedDateEvents = getEventsForDate(selectedDateStr);
+  const showWeekendCol = (i: number) => showWeekends || (i >= 1 && i <= 5);
+  const dayCols = showWeekends ? 7 : 5;
 
   return (
-    <div className="flex-1 flex overflow-hidden h-full">
-      {/* Left Pane: Calendar Grid */}
-      <main className="flex-1 flex flex-col min-w-0 bg-white">
-        {/* Sub-header: Date navigation */}
-        <header className="flex items-center justify-between border-b border-slate-200 px-8 py-3 bg-white shrink-0 z-10 h-14">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-primary text-xl">calendar_today</span>
-            <h2 className="text-slate-900 text-lg font-bold tracking-tight">
-              {monthNames[month]} {year}
-            </h2>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handlePrevMonth}
-              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
-              title="Previous Month"
-            >
-              <span className="material-symbols-outlined text-xl">chevron_left</span>
-            </button>
-            <button
-              onClick={() => setCurrentDate(new Date())}
-              className="px-3 py-1 bg-slate-150 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
-            >
-              Today
-            </button>
-            <button
-              onClick={handleNextMonth}
-              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
-              title="Next Month"
-            >
-              <span className="material-symbols-outlined text-xl">chevron_right</span>
-            </button>
-          </div>
-        </header>
+    <div className={'month ' + (density === 'compact' ? 'is-compact' : density === 'spacious' ? 'is-spacious' : '')}>
+      <div className="month-header" style={{ gridTemplateColumns: `repeat(${dayCols}, 1fr)` }}>
+        {DAY_SHORT.slice(1).concat(DAY_SHORT.slice(0, 1)).map((d, i) => {
+          const origIdx = (i + 1) % 7;
+          if (!showWeekendCol(origIdx)) return null;
+          return <div key={d} className="month-header-cell">{d}</div>;
+        })}
+      </div>
 
-        {/* Calendar Grid Area */}
-        <div className="flex-1 flex flex-col p-6 min-h-0 overflow-hidden bg-background-light">
-          {/* Days of Week Headers */}
-          <div className="grid grid-cols-7 gap-1 mb-1.5 shrink-0">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-              <div key={d} className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-1">
-                {d}
-              </div>
-            ))}
-          </div>
+      <div className="month-grid">
+        {weeks.map((week, wi) => (
+          <MonthWeek
+            key={wi}
+            days={week}
+            events={events}
+            conflicts={conflicts}
+            cursor={cursor}
+            today={today}
+            onPickEvent={onPickEvent}
+            onPickMore={onPickMore}
+            onMoveEvent={onMoveEvent}
+            onCreateAt={onCreateAt}
+            showWeekends={showWeekends}
+            density={density}
+            canDrag={canDrag}
+            setHoverEvent={setHoverEvent}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
-          {/* Calendar Day Cells */}
-          <div className="flex-1 grid grid-cols-7 gap-1 bg-slate-200/50 rounded-2xl overflow-hidden p-1 shadow-inner border border-slate-200/40">
-            {days.map((day, idx) => {
-              const dayEvents = getEventsForDate(day.dateStr);
-              const isToday = day.dateStr === new Date().toISOString().split('T')[0];
-              const isSelected = day.dateStr === selectedDateStr;
+interface MonthWeekProps {
+  days: Date[];
+  events: CalendarEvent[];
+  conflicts: Map<string, number>;
+  cursor: Date;
+  today: Date;
+  onPickEvent: (ev: CalendarEvent) => void;
+  onPickMore: (payload: MorePayload) => void;
+  onMoveEvent: (id: string, day: Date) => void;
+  onCreateAt: (date: Date) => void;
+  showWeekends: boolean;
+  density: string;
+  canDrag: boolean;
+  setHoverEvent: (h: HoverPayload | null) => void;
+}
 
-              return (
-                <div
-                  key={`${day.dateStr}-${idx}`}
-                  onClick={() => setSelectedDateStr(day.dateStr)}
-                  onDoubleClick={() => onDateClick(day.dateStr)}
-                  className={`p-1.5 flex flex-col gap-1 rounded-xl transition-all relative group cursor-pointer ${
-                    day.isCurrentMonth ? 'bg-white' : 'bg-slate-50/40 opacity-60'
-                  } ${
-                    isSelected ? 'ring-2 ring-primary bg-blue-50/20' : 'hover:bg-slate-50/80'
-                  }`}
-                >
-                  {/* Date Number Label */}
-                  <div className="flex justify-between items-center shrink-0">
-                    {/* Add event quick indicator */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDateClick(day.dateStr);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 text-[10px] text-primary hover:text-blue-700 font-bold flex items-center gap-0.5 p-0.5 rounded transition-opacity"
-                    >
-                      <span className="material-symbols-outlined text-xs">add</span>
-                    </button>
+interface Placed {
+  ev: CalendarEvent;
+  startIdx: number;
+  endIdx: number;
+  lane: number;
+}
 
-                    <div
-                      className={`flex items-center justify-center text-xs font-bold ${
-                        isToday
-                          ? 'w-6 h-6 rounded-full bg-primary text-white shadow-sm'
-                          : isSelected
-                          ? 'text-primary'
-                          : day.isCurrentMonth
-                          ? 'text-slate-700'
-                          : 'text-slate-400'
-                      }`}
-                    >
-                      {day.dayNum}
-                    </div>
-                  </div>
+const MonthWeek = ({ days, events, conflicts, cursor, today, onPickEvent, onPickMore, onMoveEvent, onCreateAt, showWeekends, density, canDrag, setHoverEvent }: MonthWeekProps) => {
+  const visibleIdx = showWeekends
+    ? [0, 1, 2, 3, 4, 5, 6]
+    : days.map((_, i) => i).filter((i) => {
+        const dow = days[i].getDay();
+        return dow !== 0 && dow !== 6;
+      });
+  const cols = visibleIdx.length;
+  const weekStart = startOfDay(days[0]);
+  const weekEnd = addDays(weekStart, 7);
 
-                  {/* Day Events Container */}
-                  <div className="flex-grow overflow-y-auto space-y-1 pr-0.5 max-h-[80px]">
-                    {dayEvents.map(event => (
-                      <div
-                        key={event.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEventClick(event);
-                        }}
-                        style={{ borderLeftColor: event.color || '#2b93ee' }}
-                        className="event-pill text-[10px] font-semibold truncate px-2 py-1 rounded bg-slate-50 border border-slate-200/60 border-l-4 text-slate-700 shadow-sm leading-tight flex items-center justify-between"
-                      >
-                        <span className="truncate">{event.title}</span>
-                        {event.visibility === 'PRIVATE' && (
-                          <span className="material-symbols-outlined text-[10px] text-red-500 ml-1">lock</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </main>
+  const multi = events
+    .filter((e) => e.allDay || e.end)
+    .filter((e) => {
+      const s = startOfDay(e.start);
+      const en = startOfDay(eventEnd(e));
+      return s < weekEnd && en > weekStart;
+    });
 
-      {/* Right Pane: Glass Sidebar Agenda */}
-      <aside className="w-[320px] h-full shrink-0 glass-panel border-l border-slate-200/80 shadow-[-4px_0_24px_rgba(0,0,0,0.02)] flex flex-col z-10 relative">
-        <div className="px-6 py-6 border-b border-slate-200/50 shrink-0">
-          <h3 className="text-base font-bold text-slate-800 tracking-tight">Day Agenda</h3>
-          <p className="text-xs text-slate-500 mt-1">{formatAgendaDate(selectedDateStr)}</p>
-        </div>
+  const lanes: Placed[][] = [];
+  const placed: Placed[] = multi
+    .map((e) => {
+      const s = startOfDay(e.start);
+      const en = startOfDay(eventEnd(e));
+      const startIdx = Math.max(0, Math.floor((s.getTime() - weekStart.getTime()) / MS_DAY));
+      const endIdx = Math.min(7, Math.ceil((en.getTime() - weekStart.getTime()) / MS_DAY));
+      return { ev: e, startIdx, endIdx, lane: 0 };
+    })
+    .sort((a, b) => a.startIdx - b.startIdx || (b.endIdx - b.startIdx) - (a.endIdx - a.startIdx));
+  placed.forEach((p) => {
+    let lane = 0;
+    while (lanes[lane] && lanes[lane].some((o) => !(o.endIdx <= p.startIdx || o.startIdx >= p.endIdx))) lane++;
+    lanes[lane] = lanes[lane] || [];
+    lanes[lane].push(p);
+    p.lane = lane;
+  });
 
-        {/* Selected Date Agenda Events */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-          {selectedDateEvents.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-              <span className="material-symbols-outlined text-slate-300 text-3xl">event_busy</span>
-              <p className="text-xs font-semibold text-slate-400 mt-2">No scheduled events</p>
-              <button
-                onClick={() => onDateClick(selectedDateStr)}
-                className="mt-3 text-xs text-primary hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-sm">add</span> Add an event
-              </button>
+  const singles = (day: Date) => events.filter((e) => !e.allDay && !e.end && eventOnDay(e, day)).sort((a, b) => a.start.getTime() - b.start.getTime());
+
+  const dragHandlers = (day: Date) => ({
+    onDragOver: (ev: React.DragEvent) => {
+      ev.preventDefault();
+      ev.currentTarget.classList.add('is-drop');
+    },
+    onDragLeave: (ev: React.DragEvent) => ev.currentTarget.classList.remove('is-drop'),
+    onDrop: (ev: React.DragEvent) => {
+      ev.preventDefault();
+      ev.currentTarget.classList.remove('is-drop');
+      const id = ev.dataTransfer.getData('text/event');
+      if (id) onMoveEvent(id, day);
+    },
+  });
+
+  const dayConflictCount = (day: Date) => {
+    let n = 0;
+    singles(day).forEach((ev) => {
+      if (conflicts.has(ev.id)) n++;
+    });
+    return n;
+  };
+
+  return (
+    <div className="month-week" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}>
+      {visibleIdx.map((i) => {
+        const day = days[i];
+        const inMonth = day.getMonth() === cursor.getMonth();
+        const isToday = sameDay(day, today);
+        const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+        const conflictN = dayConflictCount(day);
+        return (
+          <div
+            key={i}
+            className={'month-cell' + (inMonth ? '' : ' is-out') + (isToday ? ' is-today' : '') + (isWeekend ? ' is-weekend' : '')}
+            onDoubleClick={() => onCreateAt(day)}
+            {...dragHandlers(day)}
+          >
+            <div className="month-cell-head">
+              <span className="month-cell-date">
+                {day.getDate() === 1 && <span className="month-cell-mo">{MONTH_SHORT[day.getMonth()]}</span>}
+                {day.getDate()}
+              </span>
+              {isToday && <span className="today-pill">TODAY</span>}
+              {!isToday && conflictN > 0 && (
+                <span className="cell-conflict-badge mono" title={conflictN + ' overlap' + (conflictN > 1 ? 's' : '')}>
+                  <Icon name="warn" size={9} />
+                  {conflictN}
+                </span>
+              )}
             </div>
-          ) : (
-            <div className="space-y-2">
-              {selectedDateEvents.map(event => {
-                const startTime = new Date(event.start).toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: true
-                });
+          </div>
+        );
+      })}
+
+      <div className="month-bars" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}>
+        {placed.map(({ ev, startIdx, endIdx, lane }) => {
+          const visStart = visibleIdx.findIndex((v) => v >= startIdx);
+          let visEnd = -1;
+          for (let k = visibleIdx.length - 1; k >= 0; k--) {
+            if (visibleIdx[k] < endIdx) {
+              visEnd = k + 1;
+              break;
+            }
+          }
+          if (visStart === -1 || visEnd === -1 || visEnd <= visStart) return null;
+          const cat = CAT_BY_ID[ev.cat];
+          return (
+            <button
+              key={ev.id}
+              className="month-bar"
+              style={{
+                gridColumn: `${visStart + 1} / ${visEnd + 1}`,
+                gridRow: lane + 1,
+                background: cat.soft,
+                color: cat.ink,
+                borderLeft: `3px solid ${cat.dot}`,
+              }}
+              draggable={canDrag && !ev.rrule}
+              onDragStart={(e) => e.dataTransfer.setData('text/event', ev.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onPickEvent(ev);
+              }}
+              onMouseEnter={(e) => setHoverEvent({ ev, x: e.clientX, y: e.clientY, conflicts: conflicts.get(ev.id) || 0 })}
+              onMouseLeave={() => setHoverEvent(null)}
+            >
+              {ev.cat === 'travel' && <Icon name="pin" size={11} />}
+              <span className="month-bar-title">{ev.title}</span>
+              {ev.rrule && <Icon name="repeat" size={10} />}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="month-singles" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}>
+        {visibleIdx.map((i) => {
+          const day = days[i];
+          const list = singles(day);
+          const limit = density === 'compact' ? 5 : density === 'spacious' ? 3 : 4;
+          const shown = list.slice(0, limit);
+          const hidden = list.length - shown.length;
+          const barTop = lanes.length;
+          return (
+            <div key={i} className="month-single-col" style={{ paddingTop: barTop * 22 + 4 }}>
+              {shown.map((ev) => {
+                const cat = CAT_BY_ID[ev.cat];
+                const hasConflict = conflicts.has(ev.id);
                 return (
                   <button
-                    key={event.id}
-                    onClick={() => onEventClick(event)}
-                    className="w-full text-left flex items-start gap-3 p-3 bg-white/70 hover:bg-white border border-slate-100 hover:border-slate-200 rounded-xl shadow-sm transition-all group cursor-pointer"
+                    key={ev.id}
+                    className={'month-event' + (hasConflict ? ' has-conflict' : '')}
+                    draggable={canDrag && !ev.rrule}
+                    onDragStart={(e) => e.dataTransfer.setData('text/event', ev.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPickEvent(ev);
+                    }}
+                    onMouseEnter={(e) => setHoverEvent({ ev, x: e.clientX, y: e.clientY, conflicts: conflicts.get(ev.id) || 0 })}
+                    onMouseLeave={() => setHoverEvent(null)}
+                    style={{ '--cat': cat.dot, '--cat-ink': cat.ink, '--cat-soft': cat.soft } as React.CSSProperties}
                   >
-                    <div
-                      className="w-1.5 h-10 rounded shrink-0"
-                      style={{ backgroundColor: event.color || '#2b93ee' }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-400 group-hover:text-primary transition-colors">
-                          {startTime}
-                        </span>
-                        {event.visibility === 'PRIVATE' && (
-                          <span className="material-symbols-outlined text-xs text-red-500">lock</span>
-                        )}
-                      </div>
-                      <div className="text-xs font-bold text-slate-800 truncate mt-0.5">
-                        {event.title}
-                      </div>
-                      {event.room && (
-                        <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                          <span className="material-symbols-outlined text-[10px]">meeting_room</span>
-                          <span className="truncate">{event.room}</span>
-                        </div>
-                      )}
-                    </div>
+                    {ev.cat === 'deadline' ? (
+                      <>
+                        <Icon name="spark" size={9} />
+                        <span className="month-event-title">{ev.title}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="month-event-time">{fmtTime(ev.start)}</span>
+                        <span className="month-event-title">{ev.title}</span>
+                        {ev.rrule && <Icon name="repeat" size={9} />}
+                        {hasConflict && <Icon name="warn" size={10} className="event-warn" />}
+                      </>
+                    )}
                   </button>
                 );
               })}
+              {hidden > 0 && (
+                <button className="month-more" onClick={() => onPickMore({ day, events: list })}>
+                  +{hidden} more
+                </button>
+              )}
             </div>
-          )}
-        </div>
-
-        {/* Footer Area with Create Quick Shortcut */}
-        <div className="p-4 shrink-0 border-t border-slate-200/50 bg-white/30 backdrop-blur-md">
-          <button
-            onClick={() => onDateClick(selectedDateStr)}
-            className="w-full flex items-center justify-center gap-1.5 h-10 rounded-xl bg-primary hover:bg-blue-600 active:scale-[0.98] text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-base">add</span>
-            Add Event for this Day
-          </button>
-        </div>
-      </aside>
+          );
+        })}
+      </div>
     </div>
   );
 };
