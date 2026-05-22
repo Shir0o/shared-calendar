@@ -11,21 +11,30 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
   const [admins, setAdmins] = useState<AdminRecord[]>([]);
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => subscribeAdmins(setAdmins), []);
 
   const me = user?.email || '';
 
-  const add = async (e?: React.FormEvent) => {
-    e?.preventDefault();
+  const add = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
     const value = email.trim();
     if (!EMAIL_RE.test(value)) {
       setError('Enter a valid email address.');
       return;
     }
     setError('');
-    await addAdmin(value, me);
-    setEmail('');
+    setLoading(true);
+    try {
+      await addAdmin(value, me);
+      setEmail('');
+    } catch {
+      setError('Failed to add admin. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,7 +58,7 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
               />
-              <Btn variant="primary" leading="check" onClick={() => add()}>
+              <Btn variant="primary" leading="check" type="submit" disabled={loading}>
                 Add
               </Btn>
             </form>
