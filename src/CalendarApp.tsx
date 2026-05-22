@@ -159,10 +159,12 @@ export const CalendarApp = () => {
         setMorePayload(null);
         setAccessOpen(false);
       }
-      if (e.key === '1') setView('month');
-      if (e.key === '2') setView('week');
-      if (e.key === '3') setView('agenda');
-      if (e.key === '4') setView('year');
+      if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (e.key === '1') setView('month');
+        if (e.key === '2') setView('week');
+        if (e.key === '3') setView('agenda');
+        if (e.key === '4') setView('year');
+      }
       if (e.key === 'ArrowLeft' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         const c = new Date(cursor);

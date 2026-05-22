@@ -67,6 +67,9 @@ body {
 }
 .app.view-month { grid-template-columns: 216px 1fr; }
 .app.view-year  { grid-template-columns: 200px 1fr; }
+@media (prefers-reduced-motion: reduce) {
+  .app { transition: none; }
+}
 .app.density-compact  { --row-h: 24px; }
 .app.density-default  { --row-h: 28px; }
 .app.density-spacious { --row-h: 34px; }
