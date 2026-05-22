@@ -1,7 +1,7 @@
 import { AuthProvider, useAuth } from './lib/auth';
 import { CalendarApp } from './CalendarApp';
 import { Gate } from './views/Gate';
-import { PendingApproval } from './views/PendingApproval';
+import { AccessDenied } from './views/AccessDenied';
 
 const ConfigMissing = () => (
   <div className="app theme-light density-default gate-screen" style={{ '--accent': 'oklch(0.5 0.18 265)' } as React.CSSProperties}>
@@ -27,7 +27,7 @@ const Router = () => {
   }
 
   if (!user || !role) return <Gate />;
-  if (role === 'pending') return <PendingApproval />;
+  if (role === 'denied') return <AccessDenied />;
   return <CalendarApp />;
 };
 
