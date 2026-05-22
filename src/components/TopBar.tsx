@@ -6,7 +6,6 @@ const VIEWS: { id: ViewId; label: string; icon: 'grid' | 'cal' | 'list' | 'bars'
   { id: 'month', label: 'Month', icon: 'grid' },
   { id: 'week', label: 'Week', icon: 'cal' },
   { id: 'agenda', label: 'Agenda', icon: 'list' },
-  { id: 'timeline', label: 'Timeline', icon: 'bars' },
   { id: 'year', label: 'Year', icon: 'year' },
 ];
 

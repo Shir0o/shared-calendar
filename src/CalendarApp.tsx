@@ -159,11 +159,12 @@ export const CalendarApp = () => {
         setMorePayload(null);
         setAccessOpen(false);
       }
-      if (e.key === '1') setView('month');
-      if (e.key === '2') setView('week');
-      if (e.key === '3') setView('agenda');
-      if (e.key === '4') setView('timeline');
-      if (e.key === '5') setView('year');
+      if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (e.key === '1') setView('month');
+        if (e.key === '2') setView('week');
+        if (e.key === '3') setView('agenda');
+        if (e.key === '4') setView('year');
+      }
       if (e.key === 'ArrowLeft' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         const c = new Date(cursor);
@@ -201,7 +202,7 @@ export const CalendarApp = () => {
   };
 
   return (
-    <div className={'app ' + themeClass + ' ' + densityClass} style={{ '--accent': accent.c, '--accent-soft': accent.soft, '--accent-h': accent.h } as React.CSSProperties}>
+    <div className={'app view-' + view + ' ' + themeClass + ' ' + densityClass} style={{ '--accent': accent.c, '--accent-soft': accent.soft, '--accent-h': accent.h } as React.CSSProperties}>
       <Sidebar
         cursor={cursor}
         setCursor={setCursor}

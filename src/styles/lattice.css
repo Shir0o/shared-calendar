@@ -63,6 +63,12 @@ body {
   grid-template-columns: 248px 1fr;
   height: 100vh;
   background: var(--bg);
+  transition: grid-template-columns 160ms ease;
+}
+.app.view-month { grid-template-columns: 216px 1fr; }
+.app.view-year  { grid-template-columns: 200px 1fr; }
+@media (prefers-reduced-motion: reduce) {
+  .app { transition: none; }
 }
 .app.density-compact  { --row-h: 24px; }
 .app.density-default  { --row-h: 28px; }
@@ -183,7 +189,7 @@ body {
 /* ─── Top bar ─────────────────────────────────────────────────────────── */
 .topbar {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 16px;
   align-items: center;
   padding: 10px 16px;
@@ -227,13 +233,13 @@ body {
 }
 
 /* Topbar right */
-.topbar-right { display: flex; align-items: center; gap: 12px; justify-content: flex-end; }
+.topbar-right { display: flex; align-items: center; gap: 12px; justify-content: flex-end; min-width: 0; }
 .search {
   position: relative;
   display: flex; align-items: center; gap: 6px;
   padding: 5px 8px 5px 10px;
   background: var(--surface-2); border: 1px solid var(--border);
-  border-radius: 7px; min-width: 260px;
+  border-radius: 7px; flex: 0 1 260px; min-width: 0;
 }
 .search input {
   appearance: none; border: 0; background: transparent; font: inherit;

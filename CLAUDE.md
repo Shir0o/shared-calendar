@@ -63,3 +63,13 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+---
+
+## Running the preview server
+
+The app needs Firebase config and is gated behind a login screen. To get a usable preview without asking:
+
+1. **Firebase env:** the preview MCP server does NOT inherit the `env` block from `.claude/settings.local.json`, so create a `.env.local` (gitignored via `*.local`) before starting. Copy `VITE_FIREBASE_API_KEY` and `VITE_FIREBASE_APP_ID` from `.claude/settings.local.json`, plus the documented defaults in `.env.example` (`VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_MEMBER_EMAIL`). The Firebase web API key is not a secret.
+2. **Start:** `preview_start` with config name `dev` (defined in `.claude/launch.json`, runs `vite` on port 5173).
+3. **Log in:** the calendar UI is behind a team-password gate. Fill the "TEAM PASSWORD" field with `TEAM_PASSWORD` from `.claude/settings.local.json` and click "Enter calendar" to reach the calendar (member role). The user has authorized using this stored shared password for local preview verification.
