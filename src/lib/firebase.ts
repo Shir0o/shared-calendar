@@ -9,7 +9,7 @@ const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string,
   authDomain: (import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string) || 'cisa-cal.firebaseapp.com',
   projectId: (import.meta.env.VITE_FIREBASE_PROJECT_ID as string) || 'cisa-cal',
-  storageBucket: (import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string) || 'cisa-cal.appspot.com',
+  storageBucket: (import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string) || 'cisa-cal.firebasestorage.app',
   messagingSenderId: (import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string) || '50267769259',
   appId: import.meta.env.VITE_FIREBASE_APP_ID as string,
 };
