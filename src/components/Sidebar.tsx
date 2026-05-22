@@ -167,7 +167,7 @@ const ROLE_LABEL: Record<Role, string> = {
   member: 'SHARED · password',
   admin: 'ADMIN',
   owner: 'OWNER',
-  pending: 'PENDING',
+  denied: 'DENIED',
 };
 
 export const Sidebar = ({ cursor, setCursor, rawEvents, expandedEvents, catFilter, setCatFilter, accent, role, canCreate, onCreate, onPickEvent, onOpenAccess, onSignOut }: SidebarProps) => {

@@ -1,26 +1,41 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { OWNER_EMAIL } from '../lib/firebase';
-import {
-  approveAdmin,
-  dismissRequest,
-  revokeAdmin,
-  subscribeAdmins,
-  subscribeRequests,
-  type AccessRequest,
-  type AdminRecord,
-} from '../lib/admin';
+import { addAdmin, revokeAdmin, subscribeAdmins, type AdminRecord } from '../lib/admin';
 import { Btn, Icon } from '../components/ui';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
   const { user } = useAuth();
   const [admins, setAdmins] = useState<AdminRecord[]>([]);
-  const [requests, setRequests] = useState<AccessRequest[]>([]);
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => subscribeAdmins(setAdmins), []);
-  useEffect(() => subscribeRequests(setRequests), []);
 
   const me = user?.email || '';
+
+  const add = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
+    const value = email.trim();
+    if (!EMAIL_RE.test(value)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      await addAdmin(value, me);
+      setEmail('');
+    } catch {
+      setError('Failed to add admin. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -34,22 +49,20 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
 
         <div className="modal-body">
           <div className="modal-row">
-            <label className="modal-label">Pending requests</label>
-            {requests.length === 0 && <div className="access-empty mono">No pending requests.</div>}
-            <ul className="access-list">
-              {requests.map((r) => (
-                <li key={r.email} className="access-row">
-                  <Icon name="clock" size={13} />
-                  <span className="access-email">{r.email}</span>
-                  <Btn variant="primary" leading="check" onClick={() => approveAdmin(r.email, me)}>
-                    Approve
-                  </Btn>
-                  <Btn variant="ghost" onClick={() => dismissRequest(r.email)}>
-                    Dismiss
-                  </Btn>
-                </li>
-              ))}
-            </ul>
+            <label className="modal-label">Add admin by email</label>
+            <form onSubmit={add} className="access-add">
+              <input
+                type="email"
+                className="modal-input mono"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+              />
+              <Btn variant="primary" leading="check" type="submit" disabled={loading}>
+                Add
+              </Btn>
+            </form>
+            {error && <div className="access-empty mono">{error}</div>}
           </div>
 
           <div className="modal-row">

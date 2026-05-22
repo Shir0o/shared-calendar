@@ -1255,6 +1255,8 @@ body {
 /* ─── Access panel ────────────────────────────────────────────────────────── */
 .access-modal { width: 520px; }
 .access-empty { font-size: 11px; color: var(--ink-3); padding: 6px 2px; }
+.access-add { display: flex; align-items: center; gap: 8px; }
+.access-add .modal-input { flex: 1; }
 .access-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .access-row {
   display: flex; align-items: center; gap: 10px;
