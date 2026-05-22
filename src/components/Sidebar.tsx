@@ -1,121 +1,249 @@
-import React from 'react';
-import { useAuth } from '../context/AuthContext';
-import type { ActiveTab } from '../types';
+import { useMemo } from 'react';
+import {
+  CATEGORIES,
+  CAT_BY_ID,
+  MONTH_NAMES,
+  MONTH_SHORT,
+  DAY_SHORT,
+  monthGrid,
+  startOfDay,
+  addDays,
+  sameDay,
+  eventEnd,
+  expandEvents,
+  fmtTime,
+  MS_DAY,
+  type CalendarEvent,
+  type CategoryId,
+  type Category,
+} from '../lib/calendar';
+import { Icon, IconBtn, Kbd } from './ui';
+import type { Role } from '../lib/auth';
 
-interface SidebarProps {
-  activeTab: ActiveTab;
-  setActiveTab: (tab: ActiveTab) => void;
-}
-
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
-  const { user, signOut } = useAuth();
-  
-  if (!user) return null;
-  
-  const isAdmin = user.role === 'OWNER' || user.role === 'ADMIN';
-
-  const navItems = [
-    { id: 'month_view' as ActiveTab, label: 'Month Calendar', icon: 'calendar_month' },
-    { id: 'list_view' as ActiveTab, label: 'Agenda List', icon: 'list_alt' },
-    { id: 'team_availability' as ActiveTab, label: 'Team Availability', icon: 'group' },
-    { id: 'smart_meeting_finder' as ActiveTab, label: 'Optimal Slots', icon: 'auto_awesome' },
-    { id: 'analytics' as ActiveTab, label: 'Analytics', icon: 'bar_chart' },
-    { id: 'history' as ActiveTab, label: 'Change History', icon: 'history' },
-    { id: 'design_system' as ActiveTab, label: 'Design System', icon: 'palette' },
-  ];
+// ─── Mini calendar ───────────────────────────────────────────────────────────
+const MiniCal = ({
+  cursor,
+  setCursor,
+  events,
+  accent,
+}: {
+  cursor: Date;
+  setCursor: (d: Date) => void;
+  events: CalendarEvent[];
+  accent: { c: string };
+}) => {
+  const grid = monthGrid(cursor, 1);
+  const today = startOfDay(new Date());
+  const hasEvent = useMemo(() => {
+    const m = new Set<string>();
+    events.forEach((ev) => {
+      const s = startOfDay(ev.start);
+      const e = startOfDay(eventEnd(ev));
+      for (let d = new Date(s); d < e || d.getTime() === s.getTime(); d = addDays(d, 1)) {
+        m.add(d.toISOString());
+        if (e.getTime() === s.getTime()) break;
+      }
+    });
+    return m;
+  }, [events]);
 
   return (
-    <aside className="w-64 bg-white/65 backdrop-blur-md border-r border-slate-200 shrink-0 flex flex-col py-6 px-4 z-10 h-full justify-between">
-      <div className="flex flex-col gap-6">
-        {/* Navigation Section */}
-        <div>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2 block">
-            Workspace
-          </span>
-          <nav className="space-y-1">
-            {navItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left ${
-                    isActive
-                      ? 'bg-blue-50 text-primary font-semibold shadow-sm'
-                      : 'text-slate-600 hover:bg-slate-50 font-medium'
-                  }`}
-                >
-                  <span className={`material-symbols-outlined text-xl ${isActive ? 'text-primary' : 'text-slate-400'}`}>
-                    {item.icon}
-                  </span>
-                  <span className="text-sm">{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
+    <div className="mini">
+      <div className="mini-head">
+        <span className="mini-title">
+          {MONTH_NAMES[cursor.getMonth()]} <span className="mini-year mono">{cursor.getFullYear()}</span>
+        </span>
+        <span className="mini-nav">
+          <IconBtn icon="chevL" label="Prev" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))} />
+          <IconBtn icon="chevR" label="Next" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))} />
+        </span>
+      </div>
+      <div className="mini-dows">
+        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+          <span key={i}>{d}</span>
+        ))}
+      </div>
+      <div className="mini-grid">
+        {grid.map((d, i) => {
+          const out = d.getMonth() !== cursor.getMonth();
+          const isToday = sameDay(d, today);
+          const sel = sameDay(d, cursor);
+          const dot = hasEvent.has(startOfDay(d).toISOString());
+          return (
+            <button
+              key={i}
+              className={'mini-cell' + (out ? ' is-out' : '') + (isToday ? ' is-today' : '') + (sel ? ' is-sel' : '')}
+              onClick={() => setCursor(new Date(d))}
+            >
+              <span>{d.getDate()}</span>
+              {dot && !out && <span className="mini-dot" style={{ background: accent.c }} />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
-        {/* Admin Navigation Section */}
-        {isAdmin && (
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2 block">
-              Administration
-            </span>
-            <nav className="space-y-1">
-              <button
-                onClick={() => setActiveTab('security')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left ${
-                  activeTab === 'security'
-                    ? 'bg-blue-50 text-primary font-semibold shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50 font-medium'
-                }`}
-              >
-                <span className={`material-symbols-outlined text-xl ${activeTab === 'security' ? 'text-primary' : 'text-slate-400'}`}>
-                  admin_panel_settings
-                </span>
-                <span className="text-sm">Security & Access</span>
-              </button>
-            </nav>
+// ─── Coming Up panel ──────────────────────────────────────────────────────────
+const ComingUp = ({ events, onPickEvent }: { events: CalendarEvent[]; onPickEvent: (ev: CalendarEvent) => void }) => {
+  const today = startOfDay(new Date());
+  const expanded = useMemo(() => {
+    const start = startOfDay(new Date());
+    return expandEvents(events, start, addDays(start, 60));
+  }, [events]);
+  const upcoming = expanded
+    .filter((ev) => eventEnd(ev) >= new Date())
+    .sort((a, b) => a.start.getTime() - b.start.getTime())
+    .slice(0, 7);
+
+  const groups: Record<string, CalendarEvent[]> = {};
+  upcoming.forEach((ev) => {
+    const key = startOfDay(ev.start).toISOString();
+    (groups[key] = groups[key] || []).push(ev);
+  });
+
+  const relLabel = (day: Date) => {
+    const diff = Math.round((startOfDay(day).getTime() - today.getTime()) / MS_DAY);
+    if (diff === 0) return 'TODAY';
+    if (diff === 1) return 'TOMORROW';
+    if (diff < 7) return DAY_SHORT[day.getDay()].toUpperCase();
+    return MONTH_SHORT[day.getMonth()].toUpperCase() + ' ' + day.getDate();
+  };
+
+  if (upcoming.length === 0) return <div className="coming-up-empty mono">No upcoming events</div>;
+
+  return (
+    <div className="coming-up">
+      {Object.entries(groups).map(([key, items]) => {
+        const day = new Date(key);
+        return (
+          <div key={key} className="coming-up-group">
+            <div className="coming-up-head mono">
+              <span className="coming-up-rel">{relLabel(day)}</span>
+              <span className="coming-up-date">
+                {MONTH_SHORT[day.getMonth()]} {day.getDate()}
+              </span>
+            </div>
+            <ul>
+              {items.map((ev) => {
+                const cat = CAT_BY_ID[ev.cat];
+                return (
+                  <li key={ev.id}>
+                    <button className="coming-up-item" onClick={() => onPickEvent(ev)}>
+                      <span className="coming-up-time mono">{ev.allDay ? 'all' : fmtTime(ev.start)}</span>
+                      <span className="catdot" style={{ width: 6, height: 6, background: cat.dot }} />
+                      <span className="coming-up-title">{ev.title}</span>
+                      {ev.rrule && <Icon name="repeat" size={9} />}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-        )}
+        );
+      })}
+    </div>
+  );
+};
+
+interface SidebarProps {
+  cursor: Date;
+  setCursor: (d: Date) => void;
+  rawEvents: CalendarEvent[];
+  expandedEvents: CalendarEvent[];
+  catFilter: CategoryId[];
+  setCatFilter: (updater: CategoryId[] | ((f: CategoryId[]) => CategoryId[])) => void;
+  accent: { c: string };
+  role: Role;
+  canCreate: boolean;
+  onCreate: () => void;
+  onPickEvent: (ev: CalendarEvent) => void;
+  onOpenAccess?: () => void;
+  onSignOut: () => void;
+}
+
+const ROLE_LABEL: Record<Role, string> = {
+  member: 'SHARED · password',
+  admin: 'ADMIN',
+  owner: 'OWNER',
+  pending: 'PENDING',
+};
+
+export const Sidebar = ({ cursor, setCursor, rawEvents, expandedEvents, catFilter, setCatFilter, accent, role, canCreate, onCreate, onPickEvent, onOpenAccess, onSignOut }: SidebarProps) => {
+  const counts = useMemo(() => {
+    const c: Record<string, number> = {};
+    rawEvents.forEach((ev) => {
+      c[ev.cat] = (c[ev.cat] || 0) + 1;
+    });
+    return c;
+  }, [rawEvents]);
+
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-brand">
+        <div className="brand-mark" style={{ background: accent.c }}>
+          <span className="brand-glyph" />
+        </div>
+        <div>
+          <div className="brand-name">Lattice</div>
+          <div className="brand-sub mono">shared · calendar</div>
+        </div>
       </div>
 
-      {/* Footer Section with User Card */}
-      <div className="pt-6 border-t border-slate-200/60 flex flex-col gap-4">
-        {/* Settings button */}
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all text-left ${
-            activeTab === 'settings'
-              ? 'bg-blue-50 text-primary font-semibold shadow-sm'
-              : 'text-slate-600 hover:bg-slate-50 font-medium'
-          }`}
-        >
-          <span className={`material-symbols-outlined text-xl ${activeTab === 'settings' ? 'text-primary' : 'text-slate-400'}`}>
-            settings
-          </span>
-          <span className="text-sm">Settings</span>
+      {canCreate && (
+        <button className="create-cta" onClick={onCreate} style={{ background: accent.c }}>
+          <Icon name="plus" size={12} />
+          <span>New event</span>
+          <Kbd>C</Kbd>
         </button>
+      )}
 
-        {/* User profile brief card */}
-        <div className="flex items-center gap-3 px-2 py-1.5 bg-slate-50/50 rounded-2xl border border-slate-200/40">
-          <img
-            src={user.photoURL}
-            alt={user.displayName}
-            className="w-9 h-9 rounded-full bg-slate-100 object-cover shrink-0"
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-slate-800 truncate">{user.displayName}</p>
-            <p className="text-[10px] text-slate-500 font-medium capitalize">{user.role.toLowerCase()}</p>
-          </div>
-          <button
-            onClick={signOut}
-            title="Sign Out"
-            className="p-1 hover:bg-slate-200 rounded-lg text-slate-400 hover:text-slate-700 transition-colors shrink-0"
-          >
-            <span className="material-symbols-outlined text-lg">logout</span>
+      <MiniCal cursor={cursor} setCursor={setCursor} events={expandedEvents} accent={accent} />
+
+      <div className="side-section">
+        <div className="side-section-head">
+          <span>Coming up</span>
+        </div>
+        <ComingUp events={rawEvents} onPickEvent={onPickEvent} />
+      </div>
+
+      <div className="side-section">
+        <div className="side-section-head">
+          <span>Categories</span>
+          <button className="link-btn" onClick={() => setCatFilter(catFilter.length ? [] : CATEGORIES.map((c) => c.id))}>
+            {catFilter.length ? 'Show all' : 'Hide all'}
           </button>
         </div>
+        <ul className="cat-list">
+          {CATEGORIES.map((c: Category) => {
+            const off = catFilter.includes(c.id);
+            return (
+              <li key={c.id}>
+                <button
+                  className={'cat-row' + (off ? ' is-off' : '')}
+                  onClick={() => setCatFilter((f) => (f.includes(c.id) ? f.filter((x) => x !== c.id) : [...f, c.id]))}
+                >
+                  <span className="cat-swatch" style={{ background: c.dot, opacity: off ? 0.25 : 1 }} />
+                  <span className="cat-name">{c.label}</span>
+                  <span className="cat-count mono">{counts[c.id] || 0}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      <div className="sidebar-foot mono">
+        <Icon name={role === 'member' ? 'lock' : 'shield'} size={10} />
+        <span>{ROLE_LABEL[role]}</span>
+        <span style={{ flex: 1 }} />
+        {role === 'owner' && onOpenAccess && (
+          <button className="link-btn" onClick={onOpenAccess} title="Manage admins">
+            Access
+          </button>
+        )}
+        <IconBtn icon="logout" label="Sign out" size={12} onClick={onSignOut} />
       </div>
     </aside>
   );

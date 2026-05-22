@@ -1,88 +1,88 @@
-import React from 'react';
-import { useAuth } from '../context/AuthContext';
-import type { ActiveTab } from '../types';
+import { MONTH_NAMES, MONTH_SHORT, startOfWeek, addDays } from '../lib/calendar';
+import { Icon, IconBtn, SegItem, Kbd } from './ui';
+import type { ViewId } from '../types';
 
-interface TopbarProps {
-  activeTab: ActiveTab;
-  setActiveTab: (tab: ActiveTab) => void;
-  onCreateEventClick: () => void;
+const VIEWS: { id: ViewId; label: string; icon: 'grid' | 'cal' | 'list' | 'bars' | 'year' }[] = [
+  { id: 'month', label: 'Month', icon: 'grid' },
+  { id: 'week', label: 'Week', icon: 'cal' },
+  { id: 'agenda', label: 'Agenda', icon: 'list' },
+  { id: 'timeline', label: 'Timeline', icon: 'bars' },
+  { id: 'year', label: 'Year', icon: 'year' },
+];
+
+interface TopBarProps {
+  view: ViewId;
+  setView: (v: ViewId) => void;
+  cursor: Date;
+  setCursor: (d: Date) => void;
+  query: string;
+  setQuery: (q: string) => void;
+  conflictCount: number;
+  onConflictClick: () => void;
+  onToday: () => void;
 }
 
-export const Topbar: React.FC<TopbarProps> = ({ activeTab, setActiveTab, onCreateEventClick }) => {
-  const { user } = useAuth();
-
-  if (!user) return null;
-
-  const handleTabToggle = (mode: 'month' | 'list') => {
-    if (mode === 'month') {
-      setActiveTab('month_view');
-    } else {
-      setActiveTab('list_view');
-    }
+export const TopBar = ({ view, setView, cursor, setCursor, query, setQuery, conflictCount, onConflictClick, onToday }: TopBarProps) => {
+  const stepCursor = (dir: number) => {
+    const c = new Date(cursor);
+    if (view === 'week') c.setDate(c.getDate() + dir * 7);
+    else if (view === 'year') c.setFullYear(c.getFullYear() + dir);
+    else c.setMonth(c.getMonth() + dir);
+    setCursor(c);
   };
 
-  const isCalendarView = activeTab === 'month_view' || activeTab === 'list_view';
+  const headline = () => {
+    if (view === 'year') return String(cursor.getFullYear());
+    if (view === 'week') {
+      const s = startOfWeek(cursor, 1);
+      const e = addDays(s, 6);
+      const sMo = MONTH_SHORT[s.getMonth()];
+      const eMo = MONTH_SHORT[e.getMonth()];
+      if (s.getMonth() === e.getMonth()) return `${MONTH_NAMES[s.getMonth()]} ${s.getDate()}–${e.getDate()}, ${s.getFullYear()}`;
+      return `${sMo} ${s.getDate()} – ${eMo} ${e.getDate()}, ${s.getFullYear()}`;
+    }
+    return `${MONTH_NAMES[cursor.getMonth()]} ${cursor.getFullYear()}`;
+  };
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 shrink-0 z-20 h-16">
-      {/* Brand Logo & Name */}
-      <div className="flex items-center gap-8">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-sm">
-            <span className="material-symbols-outlined text-xl">event_available</span>
-          </div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">SoftSchedule</h1>
+    <header className="topbar">
+      <div className="topbar-left">
+        <div className="date-nav">
+          <button className="today-btn mono" onClick={onToday}>
+            <Icon name="today" size={11} />
+            <span>Today</span>
+          </button>
+          <span className="date-nav-arrows">
+            <IconBtn icon="chevL" label="Previous" onClick={() => stepCursor(-1)} />
+            <IconBtn icon="chevR" label="Next" onClick={() => stepCursor(1)} />
+          </span>
         </div>
-
-        {/* Top bar View mode toggle */}
-        {isCalendarView && (
-          <div className="bg-slate-100 p-0.5 rounded-xl hidden md:flex items-center">
-            <button
-              onClick={() => handleTabToggle('month')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold leading-normal transition-all ${
-                activeTab === 'month_view'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              Month
-            </button>
-            <button
-              onClick={() => handleTabToggle('list')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold leading-normal transition-all ${
-                activeTab === 'list_view'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              List
-            </button>
-          </div>
-        )}
+        <h1 className="topbar-title">{headline()}</h1>
       </div>
 
-      {/* Action buttons & Profile avatar */}
-      <div className="flex items-center gap-4">
-        {/* Create Event Trigger */}
-        <button
-          onClick={onCreateEventClick}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-blue-600 active:scale-[0.98] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
-        >
-          <span className="material-symbols-outlined text-base">add</span>
-          Create Event
-        </button>
+      <div className="topbar-mid">
+        <div className="seg">
+          {VIEWS.map((v) => (
+            <SegItem key={v.id} active={view === v.id} onClick={() => setView(v.id)}>
+              <Icon name={v.icon} size={12} />
+              <span>{v.label}</span>
+            </SegItem>
+          ))}
+        </div>
+      </div>
 
-        {/* User avatar and email indicator */}
-        <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200">
-          <img
-            src={user.photoURL}
-            alt={user.displayName}
-            className="w-8 h-8 rounded-full bg-slate-100 object-cover shadow-inner"
-          />
-          <div className="hidden lg:flex flex-col text-left">
-            <span className="text-xs font-bold text-slate-800 leading-none">{user.displayName}</span>
-            <span className="text-[10px] text-slate-400 font-mono mt-0.5 leading-none">{user.email}</span>
-          </div>
+      <div className="topbar-right">
+        {conflictCount > 0 && (
+          <button className="conflict-pill" onClick={onConflictClick} title="Show events with overlapping times">
+            <Icon name="warn" size={11} />
+            <span className="mono">{conflictCount}</span>
+            <span>conflict{conflictCount > 1 ? 's' : ''}</span>
+          </button>
+        )}
+        <div className="search">
+          <Icon name="search" size={13} />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search events…" />
+          <Kbd>⌘K</Kbd>
         </div>
       </div>
     </header>
