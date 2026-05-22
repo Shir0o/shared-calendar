@@ -171,7 +171,7 @@ export function expandEvent(ev: CalendarEvent, rangeStart: Date, rangeEnd: Date)
   const stop = until && until < rangeEnd ? addDays(startOfDay(until), 1) : rangeEnd;
 
   let produced = 0;
-  let safety = 400;
+  let safety = 1000;
   const cap = r.count || 9999;
 
   while (cur < stop && produced < cap && safety-- > 0) {
@@ -187,7 +187,11 @@ export function expandEvent(ev: CalendarEvent, rangeStart: Date, rangeEnd: Date)
         else include = cur.getDay() === seriesStart.getDay();
       }
     } else if (r.freq === 'monthly') {
-      if (cur.getDate() === seriesStart.getDate()) {
+      // Clamp the target day-of-month to the last day of shorter months so an
+      // event on the 31st still lands on Feb 28/29, Apr 30, etc.
+      const lastDay = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
+      const targetDay = seriesStart.getDate();
+      if (cur.getDate() === Math.min(targetDay, lastDay)) {
         const monthsFromStart = (cur.getFullYear() - seriesStart.getFullYear()) * 12 + (cur.getMonth() - seriesStart.getMonth());
         include = monthsFromStart >= 0 && monthsFromStart % interval === 0;
       }

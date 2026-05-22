@@ -36,9 +36,9 @@ service cloud.firestore {
     // Access requests: a Google user may create/read their own request;
     // the owner can read and delete any request.
     match /accessRequests/{id} {
-      allow read:   if isOwner() || (signedIn() && id == emailKey());
-      allow create: if signedIn() && id == emailKey();
-      allow delete: if isOwner();
+      allow read:           if isOwner() || (signedIn() && id == emailKey());
+      allow create, update: if signedIn() && id == emailKey();
+      allow delete:         if isOwner();
     }
   }
 }

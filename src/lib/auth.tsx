@@ -36,13 +36,15 @@ async function resolveRole(user: User): Promise<Role> {
   } catch {
     /* fall through to pending */
   }
-  // Not an admin yet — record an access request so the owner can approve.
+  // Not an admin yet — record an access request once so the owner can approve.
+  // Only write if absent, to avoid redundant writes / clobbering requestedAt
+  // on every page load.
   try {
-    await setDoc(
-      doc(db, 'accessRequests', emailKey(email)),
-      { email, requestedAt: serverTimestamp() },
-      { merge: true },
-    );
+    const reqRef = doc(db, 'accessRequests', emailKey(email));
+    const existing = await getDoc(reqRef);
+    if (!existing.exists()) {
+      await setDoc(reqRef, { email, requestedAt: serverTimestamp() });
+    }
   } catch {
     /* best-effort */
   }

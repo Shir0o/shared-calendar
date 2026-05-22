@@ -81,7 +81,7 @@ export const EventEditor = ({ initial, allEvents, onSave, onCancel, onDelete }: 
     else start.setHours(startH, startM, 0, 0);
     const out: CalendarEvent = {
       ...(initial as CalendarEvent),
-      id: initial.id || 'e' + Date.now(),
+      id: initial.id || crypto.randomUUID(),
       title: title || 'Untitled event',
       cat,
       loc: loc || '—',
