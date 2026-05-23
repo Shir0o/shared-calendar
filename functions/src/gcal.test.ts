@@ -65,3 +65,56 @@ describe('planFeedSync — per-feed deletion isolation', () => {
     expect(plan.upserts).toEqual([{ id: docIdForFeed(FEED_A, 'u1'), uid: 'u1' }]);
   });
 });
+
+describe('planFeedSync — LAST-MODIFIED skip behavior', () => {
+  const SAME = new Date('2026-06-01T08:00:00Z');
+  const LATER = new Date('2026-06-02T09:00:00Z');
+
+  const evWithLm = (uid: string, lm?: Date): ParsedEvent => ({ ...ev(uid), lastModified: lm });
+
+  it('skips the upsert when both sides have equal lastModified', () => {
+    const existing = [{ id: docIdForFeed(FEED_A, 'u1'), uid: 'u1', lastModified: SAME }];
+    const plan = planFeedSync(FEED_A, existing, [evWithLm('u1', SAME)]);
+    expect(plan.upserts).toEqual([]);
+    expect(plan.skipped).toBe(1);
+    expect(plan.deletes).toEqual([]);
+  });
+
+  it('upserts when lastModified has advanced', () => {
+    const existing = [{ id: docIdForFeed(FEED_A, 'u1'), uid: 'u1', lastModified: SAME }];
+    const plan = planFeedSync(FEED_A, existing, [evWithLm('u1', LATER)]);
+    expect(plan.upserts).toEqual([{ id: docIdForFeed(FEED_A, 'u1'), uid: 'u1' }]);
+    expect(plan.skipped).toBe(0);
+  });
+
+  it('upserts when the persisted lastModified is missing (first sync of legacy doc)', () => {
+    const existing = [{ id: 'legacy', uid: 'u1' }]; // no lastModified
+    const plan = planFeedSync(FEED_A, existing, [evWithLm('u1', SAME)]);
+    expect(plan.upserts).toEqual([{ id: 'legacy', uid: 'u1' }]);
+    expect(plan.skipped).toBe(0);
+  });
+
+  it('upserts when the parsed event has no lastModified (some feeds omit it)', () => {
+    const existing = [{ id: docIdForFeed(FEED_A, 'u1'), uid: 'u1', lastModified: SAME }];
+    const plan = planFeedSync(FEED_A, existing, [evWithLm('u1', undefined)]);
+    expect(plan.upserts).toEqual([{ id: docIdForFeed(FEED_A, 'u1'), uid: 'u1' }]);
+    expect(plan.skipped).toBe(0);
+  });
+
+  it('mixed feed: skips unchanged, writes changed, deletes missing', () => {
+    const existing = [
+      { id: docIdForFeed(FEED_A, 'same'), uid: 'same', lastModified: SAME },
+      { id: docIdForFeed(FEED_A, 'changed'), uid: 'changed', lastModified: SAME },
+      { id: docIdForFeed(FEED_A, 'gone'), uid: 'gone', lastModified: SAME },
+    ];
+    const parsed = [
+      evWithLm('same', SAME),
+      evWithLm('changed', LATER),
+      evWithLm('new', SAME),
+    ];
+    const plan = planFeedSync(FEED_A, existing, parsed);
+    expect(plan.skipped).toBe(1);
+    expect(plan.upserts.map((u) => u.uid).sort()).toEqual(['changed', 'new']);
+    expect(plan.deletes).toEqual([docIdForFeed(FEED_A, 'gone')]);
+  });
+});
