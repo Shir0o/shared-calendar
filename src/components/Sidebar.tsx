@@ -158,6 +158,7 @@ interface SidebarProps {
   role: Role;
   canCreate: boolean;
   onCreate: () => void;
+  onOpenImport?: () => void;
   onPickEvent: (ev: CalendarEvent) => void;
   onOpenAccess?: () => void;
   onSignOut: () => void;
@@ -170,7 +171,7 @@ const ROLE_LABEL: Record<Role, string> = {
   denied: 'DENIED',
 };
 
-export const Sidebar = ({ cursor, setCursor, rawEvents, expandedEvents, catFilter, setCatFilter, accent, role, canCreate, onCreate, onPickEvent, onOpenAccess, onSignOut }: SidebarProps) => {
+export const Sidebar = ({ cursor, setCursor, rawEvents, expandedEvents, catFilter, setCatFilter, accent, role, canCreate, onCreate, onOpenImport, onPickEvent, onOpenAccess, onSignOut }: SidebarProps) => {
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
     rawEvents.forEach((ev) => {
@@ -196,6 +197,13 @@ export const Sidebar = ({ cursor, setCursor, rawEvents, expandedEvents, catFilte
           <Icon name="plus" size={12} />
           <span>New event</span>
           <Kbd>C</Kbd>
+        </button>
+      )}
+
+      {canCreate && onOpenImport && (
+        <button className="import-cta" onClick={onOpenImport}>
+          <Icon name="arrow" size={12} />
+          <span>Import events</span>
         </button>
       )}
 

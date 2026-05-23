@@ -7,6 +7,7 @@ import {
   onSnapshot,
   setDoc,
   Timestamp,
+  writeBatch,
   type DocumentData,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -84,6 +85,19 @@ export function subscribeEvents(cb: (events: CalendarEvent[]) => void, onError?:
 
 export async function saveEvent(ev: CalendarEvent): Promise<void> {
   await setDoc(doc(db, COLL, ev.id), toFirestore(ev), { merge: true });
+}
+
+// Bulk-create events in one go (used by the import flow). Firestore caps a
+// batch at 500 writes, so chunk accordingly.
+export async function saveEventsBatch(events: CalendarEvent[]): Promise<void> {
+  const CHUNK = 500;
+  for (let i = 0; i < events.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    for (const ev of events.slice(i, i + CHUNK)) {
+      batch.set(doc(db, COLL, ev.id), toFirestore(ev), { merge: true });
+    }
+    await batch.commit();
+  }
 }
 
 export async function removeEvent(id: string): Promise<void> {
