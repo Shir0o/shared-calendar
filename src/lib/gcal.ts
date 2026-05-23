@@ -37,7 +37,7 @@ export const callGcalSyncNow = (feedId?: string) =>
     .then((r) => GcalSyncNowResponse.parse(r.data));
 
 export const callGcalRename = (feedId: string, label: string) =>
-  httpsCallable<{ feedId: string; label: string }, OkResult>(fns, 'gcalRename')({ feedId, label }).then((r) => r.data);
+  httpsCallable<{ feedId: string; label: string }, { ok: true }>(fns, 'gcalRename')({ feedId, label }).then((r) => r.data);
 
 // Non-secret per-feed status. The ICS URL itself lives in a server-only
 // subcollection (`config/gcal_feeds/{feedId}`) that rules forbid clients
