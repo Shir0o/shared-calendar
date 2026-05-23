@@ -47,7 +47,9 @@ service cloud.firestore {
       allow read: if isOwner();
       allow write: if false;
     }
-    match /config/gcal_feeds/{feedId} {
+    // Note the path: gcal_feeds is a *document* whose `feeds` subcollection
+    // holds one doc per feed (see functions/src/index.ts FEEDS()).
+    match /config/gcal_feeds/feeds/{feedId} {
       allow read, write: if false;
     }
   }

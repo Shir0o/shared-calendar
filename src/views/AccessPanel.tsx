@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { OWNER_EMAIL } from '../lib/firebase';
 import { addAdmin, revokeAdmin, subscribeAdmins, type AdminRecord } from '../lib/admin';
@@ -196,6 +196,9 @@ const FeedRow = ({ feed }: { feed: GcalFeedStatus }) => {
   const [confirmingDisconnect, setConfirmingDisconnect] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draftLabel, setDraftLabel] = useState(feed.label ?? '');
+  // Escape sets editing=false, which unmounts the input and fires onBlur.
+  // This ref tells the blur handler to skip the save in that case.
+  const cancelledRef = useRef(false);
 
   const sync = async () => {
     setError('');
@@ -222,6 +225,11 @@ const FeedRow = ({ feed }: { feed: GcalFeedStatus }) => {
   };
 
   const saveLabel = async () => {
+    if (busy) return;
+    if (cancelledRef.current) {
+      cancelledRef.current = false;
+      return;
+    }
     const label = draftLabel.trim();
     if (!label || label === feed.label) {
       setEditing(false);
@@ -258,7 +266,11 @@ const FeedRow = ({ feed }: { feed: GcalFeedStatus }) => {
               onChange={(e) => setDraftLabel(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') saveLabel();
-                if (e.key === 'Escape') { setEditing(false); setDraftLabel(feed.label ?? ''); }
+                if (e.key === 'Escape') {
+                  cancelledRef.current = true;
+                  setEditing(false);
+                  setDraftLabel(feed.label ?? '');
+                }
               }}
               onBlur={saveLabel}
               disabled={busy === 'renaming'}

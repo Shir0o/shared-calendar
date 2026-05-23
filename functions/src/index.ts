@@ -130,8 +130,12 @@ export const gcalRename = onCall(async (req) => {
   if (label.length > 40) throw new HttpsError('invalid-argument', 'Label is too long (max 40 chars).');
   const feed = await readFeed(feedId);
   if (!feed) throw new HttpsError('not-found', 'That feed no longer exists.');
-  await FEED(feedId).set({ label }, { merge: true });
-  await STATUS().set({ feeds: { [feedId]: { label } } }, { merge: true });
+  // Batch + dot-notation: atomic, and the dotted path makes it unambiguous
+  // that we're only touching `label` (not replacing the per-feed entry).
+  const batch = db.batch();
+  batch.set(FEED(feedId), { label }, { merge: true });
+  batch.update(STATUS(), { [`feeds.${feedId}.label`]: label });
+  await batch.commit();
   return { ok: true };
 });
 
