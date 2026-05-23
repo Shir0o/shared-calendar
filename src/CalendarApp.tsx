@@ -10,6 +10,7 @@ import {
 } from './lib/calendar';
 import { useAuth, canEdit as roleCanEdit } from './lib/auth';
 import { removeEvent, saveEvent, subscribeEvents } from './lib/events';
+import { subscribeCategoryOverrides, useCategoryVersion } from './lib/categories';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { SearchResults } from './components/SearchResults';
@@ -55,6 +56,11 @@ export const CalendarApp = () => {
 
   // Realtime subscription to the shared event collection.
   useEffect(() => subscribeEvents(setEvents, (e) => console.error('events subscription error', e)), []);
+
+  // Category label/color overrides — subscribe once, force re-render via
+  // useCategoryVersion when the doc changes (mutates CATEGORIES in place).
+  useEffect(() => subscribeCategoryOverrides((e) => console.error('categories subscription error', e)), []);
+  useCategoryVersion();
 
   const expanded = useMemo(() => {
     const s = new Date(cursor.getFullYear(), 0, 1);

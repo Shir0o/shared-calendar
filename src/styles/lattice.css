@@ -1357,3 +1357,18 @@ body {
 .gcal-add-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .gcal-add-row .twk-select { flex: 1; min-width: 0; }
 .gcal-hint { color: var(--ink-3); }
+
+/* Orphan pill — warning variant of .gcal-pill. */
+.gcal-pill.is-orphan {
+  background: oklch(0.95 0.06 28); color: oklch(0.40 0.14 28);
+}
+
+/* Category editor rows. */
+.cat-edit-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.cat-edit-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.cat-edit-row .modal-input { font-size: 13px; }
