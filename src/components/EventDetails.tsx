@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import {
   CAT_BY_ID,
   conflictsForEvent,
@@ -16,27 +17,37 @@ interface EventDetailsProps {
   allEvents: CalendarEvent[];
   canEdit: boolean;
   onClose: () => void;
-  onEdit: () => void;
+  onEdit: (opts?: { series?: boolean }) => void;
   onDelete: (ev: CalendarEvent, opts?: { series?: boolean }) => void;
   onSkipInstance: (ev: CalendarEvent) => void;
   onPickEvent: (ev: CalendarEvent) => void;
 }
 
 export const EventDetails = ({ ev, allEvents, canEdit, onClose, onEdit, onDelete, onSkipInstance, onPickEvent }: EventDetailsProps) => {
+  const asideRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      if (target && asideRef.current && asideRef.current.contains(target)) return;
+      onClose();
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [onClose]);
   const cat = CAT_BY_ID[ev.cat];
   const conflicts = conflictsForEvent(ev, allEvents);
   const isRecurring = !!ev.rrule || !!ev.__seriesId;
 
   return (
-    <aside className="details" role="dialog">
+    <aside className="details" role="dialog" ref={asideRef}>
       <header className="details-head">
         <div className="details-cat" style={{ color: cat.ink, background: cat.soft }}>
           <span className="catdot" style={{ width: 7, height: 7, background: cat.dot }} />
           <span>{cat.label}</span>
         </div>
         <div className="details-actions">
-          {canEdit && <IconBtn icon="edit" label="Edit" onClick={onEdit} />}
-          {canEdit && <IconBtn icon="trash" label="Delete" onClick={() => onDelete(ev)} />}
+          {canEdit && !isRecurring && <IconBtn icon="edit" label="Edit" onClick={() => onEdit()} />}
+          {canEdit && !isRecurring && <IconBtn icon="trash" label="Delete" onClick={() => onDelete(ev)} />}
           <IconBtn icon="close" label="Close" onClick={onClose} />
         </div>
       </header>
@@ -116,14 +127,25 @@ export const EventDetails = ({ ev, allEvents, canEdit, onClose, onEdit, onDelete
       </ul>
 
       {canEdit && isRecurring && (
-        <footer className="details-foot">
-          <Btn variant="ghost" leading="close" onClick={() => onSkipInstance(ev)}>
-            Skip this date
-          </Btn>
-          <span style={{ flex: 1 }} />
-          <Btn variant="ghost" leading="trash" onClick={() => onDelete(ev, { series: true })}>
-            Delete series
-          </Btn>
+        <footer className="details-foot" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Btn variant="ghost" leading="edit" onClick={() => onEdit({ series: false })}>
+              Edit this event
+            </Btn>
+            <span style={{ flex: 1 }} />
+            <Btn variant="ghost" leading="edit" onClick={() => onEdit({ series: true })}>
+              Edit series
+            </Btn>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Btn variant="ghost" leading="close" onClick={() => onSkipInstance(ev)}>
+              Skip this date
+            </Btn>
+            <span style={{ flex: 1 }} />
+            <Btn variant="ghost" leading="trash" onClick={() => onDelete(ev, { series: true })}>
+              Delete series
+            </Btn>
+          </div>
         </footer>
       )}
     </aside>
