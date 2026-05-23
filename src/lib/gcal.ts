@@ -25,12 +25,16 @@ export const callGcalDisconnect = (feedId: string) =>
 export const callGcalSyncNow = (feedId?: string) =>
   httpsCallable<{ feedId?: string }, OkResult>(fns, 'gcalSyncNow')(feedId ? { feedId } : {}).then((r) => r.data);
 
+export const callGcalRename = (feedId: string, label: string) =>
+  httpsCallable<{ feedId: string; label: string }, OkResult>(fns, 'gcalRename')({ feedId, label }).then((r) => r.data);
+
 // Non-secret per-feed status. The ICS URL itself lives in a server-only
 // subcollection (`config/gcal_feeds/{feedId}`) that rules forbid clients
 // from reading.
 export interface GcalFeedStatus {
   feedId: string;
   label?: string;
+  defaultCat?: CategoryId;
   lastSyncAt?: Date;
   lastSyncCount?: number;
 }
@@ -43,14 +47,16 @@ export function subscribeGcalFeeds(cb: (feeds: GcalFeedStatus[]) => void): () =>
   return onSnapshot(doc(db, 'config', 'gcal'), (snap) => {
     if (!snap.exists()) return cb([]);
     const raw = (snap.data().feeds ?? {}) as Record<string, {
-      label?: string; lastSyncAt?: unknown; lastSyncCount?: number;
+      label?: string; defaultCat?: CategoryId; lastSyncAt?: unknown; lastSyncCount?: number;
     }>;
     const feeds: GcalFeedStatus[] = Object.entries(raw).map(([feedId, v]) => ({
       feedId,
       label: v.label || undefined,
+      defaultCat: v.defaultCat || undefined,
       lastSyncAt: toDate(v.lastSyncAt),
       lastSyncCount: v.lastSyncCount,
     }));
+    feeds.sort((a, b) => (a.label || '').localeCompare(b.label || ''));
     cb(feeds);
   });
 }

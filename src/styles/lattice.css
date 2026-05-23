@@ -1320,19 +1320,40 @@ body {
 .access-email { flex: 1; font-size: 12.5px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; }
 .access-tag { font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; color: var(--ink-3); padding: 2px 6px; border-radius: 3px; background: var(--surface-3); }
 
-.gcal-connect { display: flex; flex-direction: column; gap: 6px; }
-.gcal-connect .modal-input { width: 100%; }
-.gcal-connected {
-  display: flex; flex-direction: column; gap: 6px;
-  padding: 10px; border: 1px solid var(--hairline); border-radius: 7px; background: var(--surface-2);
+.gcal-feed-list {
+  list-style: none; margin: 0 0 8px; padding: 0;
+  display: flex; flex-direction: column;
+  border: 1px solid var(--hairline); border-radius: 7px; background: var(--surface-2);
 }
-.gcal-status { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink-2); flex-wrap: wrap; }
-.gcal-meta { color: var(--ink-3); }
+.gcal-feed-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid var(--hairline);
+}
+.gcal-feed-row:last-child { border-bottom: none; }
+.gcal-feed-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.gcal-feed-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gcal-feed-label { font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; }
+.gcal-feed-edit { padding: 2px; color: var(--ink-3); }
+.gcal-feed-label-input { flex: 1; min-width: 0; font-size: 13px; }
+.gcal-meta { color: var(--ink-3); font-size: 11px; }
 .gcal-pill {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em;
   padding: 2px 7px; border-radius: 999px;
   background: oklch(0.95 0.06 150); color: oklch(0.38 0.13 150);
 }
-.gcal-actions { display: flex; gap: 6px; }
+.gcal-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.gcal-confirm {
+  margin-top: 4px; padding: 8px; border-radius: 6px;
+  background: var(--surface-3); display: flex; flex-direction: column; gap: 6px;
+}
+.gcal-confirm-text { font-size: 11px; color: var(--ink-2); }
+.gcal-add {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 10px; border: 1px dashed var(--hairline); border-radius: 7px;
+}
+.gcal-add .modal-input { width: 100%; }
+.gcal-add-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gcal-add-row .twk-select { flex: 1; min-width: 0; }
 .gcal-hint { color: var(--ink-3); }
