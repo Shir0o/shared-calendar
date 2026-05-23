@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { CalendarEvent, RRule } from './calendar';
+import { EventDocSchema } from '../../shared/schemas';
 
 const COLL = 'events';
 
@@ -78,7 +79,19 @@ function toFirestore(ev: CalendarEvent): Record<string, unknown> {
 export function subscribeEvents(cb: (events: CalendarEvent[]) => void, onError?: (e: Error) => void): () => void {
   return onSnapshot(
     collection(db, COLL),
-    (snap) => cb(snap.docs.map((d) => fromDoc(d.id, d.data()))),
+    (snap) => {
+      const out: CalendarEvent[] = [];
+      for (const d of snap.docs) {
+        const parsed = EventDocSchema.safeParse(d.data());
+        if (!parsed.success) {
+          // One malformed doc shouldn't break the whole subscription.
+          console.warn(`subscribeEvents: skipping doc ${d.id}`, parsed.error.issues);
+          continue;
+        }
+        out.push(fromDoc(d.id, parsed.data));
+      }
+      cb(out);
+    },
     (err) => onError?.(err),
   );
 }

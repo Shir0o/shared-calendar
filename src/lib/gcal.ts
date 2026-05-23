@@ -5,6 +5,11 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { doc, onSnapshot, Timestamp } from 'firebase/firestore';
 import { app, db } from './firebase';
 import type { CategoryId } from './calendar';
+import {
+  GcalConnectResponse,
+  GcalDisconnectResponse,
+  GcalSyncNowResponse,
+} from '../../shared/schemas';
 
 const fns = getFunctions(app);
 
@@ -13,17 +18,18 @@ interface ConnectInput {
   label?: string;
   defaultCat?: CategoryId;
 }
-interface ConnectResult { ok: true; feedId: string; count: number }
-interface OkResult { ok: true; count?: number }
 
 export const callGcalConnect = (input: ConnectInput) =>
-  httpsCallable<ConnectInput, ConnectResult>(fns, 'gcalConnect')(input).then((r) => r.data);
+  httpsCallable<ConnectInput, unknown>(fns, 'gcalConnect')(input)
+    .then((r) => GcalConnectResponse.parse(r.data));
 
 export const callGcalDisconnect = (feedId: string) =>
-  httpsCallable<{ feedId: string }, OkResult>(fns, 'gcalDisconnect')({ feedId }).then((r) => r.data);
+  httpsCallable<{ feedId: string }, unknown>(fns, 'gcalDisconnect')({ feedId })
+    .then((r) => GcalDisconnectResponse.parse(r.data));
 
 export const callGcalSyncNow = (feedId?: string) =>
-  httpsCallable<{ feedId?: string }, OkResult>(fns, 'gcalSyncNow')(feedId ? { feedId } : {}).then((r) => r.data);
+  httpsCallable<{ feedId?: string }, unknown>(fns, 'gcalSyncNow')(feedId ? { feedId } : {})
+    .then((r) => GcalSyncNowResponse.parse(r.data));
 
 export const callGcalRename = (feedId: string, label: string) =>
   httpsCallable<{ feedId: string; label: string }, OkResult>(fns, 'gcalRename')({ feedId, label }).then((r) => r.data);
