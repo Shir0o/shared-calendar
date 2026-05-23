@@ -34,17 +34,20 @@ service cloud.firestore {
       allow write: if isOwner();
     }
 
-    // Integration config (e.g. Google Calendar connection). Two-doc split:
-    //   config/gcal         — non-secret status (connectedAt, lastSyncAt, …),
-    //                         owner-readable so the panel can show status.
-    //                         Writes only via Cloud Functions (admin SDK).
-    //   config/gcal_secret  — holds the ICS URL. NO client access at all;
-    //                         only Cloud Functions (admin SDK) can read it.
+    // Integration config (e.g. Google Calendar sync). Split so secrets never
+    // reach the client:
+    //   config/gcal                       — non-secret aggregate status doc
+    //                                       ({ feeds: { [feedId]: {...} } }).
+    //                                       Owner-readable; writes only via
+    //                                       Cloud Functions (admin SDK).
+    //   config/gcal_feeds/{feedId}        — per-feed secret ({ icsUrl, ... }).
+    //                                       NO client access; Cloud Functions
+    //                                       (admin SDK) only.
     match /config/gcal {
       allow read: if isOwner();
       allow write: if false;
     }
-    match /config/gcal_secret {
+    match /config/gcal_feeds/{feedId} {
       allow read, write: if false;
     }
   }

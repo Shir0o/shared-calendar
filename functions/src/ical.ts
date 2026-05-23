@@ -88,12 +88,18 @@ export function eventsFromIcs(text: string): ParsedEvent[] {
   return out;
 }
 
-// Stable, deterministic doc ID derived from the ICS UID. FNV-1a 64-bit.
-export function docIdFromUid(uid: string): string {
+// Stable, deterministic doc ID for a (feedId, ICS UID) pair. FNV-1a 64-bit on
+// each half — keeping them in separate hash segments means the same UID in two
+// feeds maps to different doc IDs (rare but possible).
+function fnv1a64(s: string): string {
   let h = 0xcbf29ce484222325n;
-  for (let i = 0; i < uid.length; i++) {
-    h = (h ^ BigInt(uid.charCodeAt(i))) & 0xffffffffffffffffn;
+  for (let i = 0; i < s.length; i++) {
+    h = (h ^ BigInt(s.charCodeAt(i))) & 0xffffffffffffffffn;
     h = (h * 0x100000001b3n) & 0xffffffffffffffffn;
   }
-  return 'gcal_' + h.toString(16).padStart(16, '0');
+  return h.toString(16).padStart(16, '0');
+}
+
+export function docIdForFeed(feedId: string, uid: string): string {
+  return `gcal_${fnv1a64(feedId)}_${fnv1a64(uid)}`;
 }
