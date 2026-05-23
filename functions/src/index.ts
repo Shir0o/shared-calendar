@@ -113,15 +113,15 @@ export const gcalConnect = onCall(async (req) => {
     connectedBy: callerEmail(req),
   });
 
-  const count = await applyPull(feedId, defaultCat, parsed);
+  const result = await applyPull(feedId, defaultCat, parsed);
   await STATUS().set({
     feeds: { [feedId]: {
       label: label || null,
       lastSyncAt: FieldValue.serverTimestamp(),
-      lastSyncCount: count,
+      lastSyncCount: result.total,
     } },
   }, { merge: true });
-  return { ok: true, feedId, count };
+  return { ok: true, feedId, count: result.total };
 });
 
 export const gcalDisconnect = onCall(async (req) => {
@@ -208,8 +208,13 @@ async function applyPull(
   parsed: ParsedEvent[],
 ): Promise<SyncResult> {
   // Per-feed snapshot — must filter by gcalFeedId so syncing feed B does not
-  // delete feed A's events.
-  const existingSnap = await db.collection('events').where('gcalFeedId', '==', feedId).get();
+  // delete feed A's events. Project to only the fields we need so a feed with
+  // long notes/loc doesn't balloon memory on the function instance.
+  const existingSnap = await db
+    .collection('events')
+    .where('gcalFeedId', '==', feedId)
+    .select('gcalUid', 'lastModified')
+    .get();
   const existing: ExistingDoc[] = [];
   existingSnap.forEach((d) => {
     const uid = d.data().gcalUid as string | undefined;
