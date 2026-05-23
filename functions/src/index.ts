@@ -113,11 +113,26 @@ export const gcalConnect = onCall(async (req) => {
   await STATUS().set({
     feeds: { [feedId]: {
       label: label || null,
+      defaultCat: defaultCat || null,
       lastSyncAt: FieldValue.serverTimestamp(),
       lastSyncCount: count,
     } },
   }, { merge: true });
   return { ok: true, feedId, count };
+});
+
+export const gcalRename = onCall(async (req) => {
+  if (!isOwner(req)) throw new HttpsError('permission-denied', 'Owner only.');
+  const feedId = ((req.data?.feedId as string | undefined) ?? '').trim();
+  const label = ((req.data?.label as string | undefined) ?? '').trim();
+  if (!feedId) throw new HttpsError('invalid-argument', 'feedId is required.');
+  if (!label) throw new HttpsError('invalid-argument', 'A label is required.');
+  if (label.length > 40) throw new HttpsError('invalid-argument', 'Label is too long (max 40 chars).');
+  const feed = await readFeed(feedId);
+  if (!feed) throw new HttpsError('not-found', 'That feed no longer exists.');
+  await FEED(feedId).set({ label }, { merge: true });
+  await STATUS().set({ feeds: { [feedId]: { label } } }, { merge: true });
+  return { ok: true };
 });
 
 export const gcalDisconnect = onCall(async (req) => {
@@ -175,6 +190,7 @@ async function syncOneFeed(feedId: string): Promise<number | null> {
   await STATUS().set({
     feeds: { [feedId]: {
       label: feed.label ?? null,
+      defaultCat: feed.defaultCat ?? null,
       lastSyncAt: FieldValue.serverTimestamp(),
       lastSyncCount: count,
     } },

@@ -5,11 +5,15 @@ import { addAdmin, revokeAdmin, subscribeAdmins, type AdminRecord } from '../lib
 import {
   callGcalConnect,
   callGcalDisconnect,
+  callGcalRename,
   callGcalSyncNow,
   subscribeGcalFeeds,
   type GcalFeedStatus,
 } from '../lib/gcal';
+import { CATEGORIES, CAT_BY_ID, type CategoryId } from '../lib/calendar';
 import { Btn, Icon } from '../components/ui';
+
+const LABEL_MAX = 40;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -22,53 +26,32 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
 
   useEffect(() => subscribeAdmins(setAdmins), []);
 
-  // ── Google Calendar (ICS-URL) connection state ───────────────────────────
-  // The data model is multi-feed but this UI still surfaces only the first
-  // feed; a follow-up will turn this into a list.
+  // ── Google Calendar (ICS-URL) feeds ───────────────────────────────────────
   const [feeds, setFeeds] = useState<GcalFeedStatus[]>([]);
-  const [icsUrl, setIcsUrl] = useState('');
-  const [gcalBusy, setGcalBusy] = useState<'idle' | 'connecting' | 'syncing' | 'disconnecting'>('idle');
-  const [gcalError, setGcalError] = useState('');
-
   useEffect(() => subscribeGcalFeeds(setFeeds), []);
-  const gcal = feeds[0] ?? null;
 
-  const connectGcal = async () => {
-    setGcalError('');
-    setGcalBusy('connecting');
-    try {
-      await callGcalConnect({ icsUrl: icsUrl.trim() });
-      setIcsUrl('');
-    } catch (e) {
-      setGcalError((e as Error).message || 'Could not connect.');
-    } finally {
-      setGcalBusy('idle');
-    }
-  };
+  // Add-feed form
+  const [addLabel, setAddLabel] = useState('');
+  const [addUrl, setAddUrl] = useState('');
+  const [addCat, setAddCat] = useState<CategoryId>('meeting');
+  const [addBusy, setAddBusy] = useState(false);
+  const [addError, setAddError] = useState('');
 
-  const syncGcal = async () => {
-    if (!gcal) return;
-    setGcalError('');
-    setGcalBusy('syncing');
+  const connectFeed = async () => {
+    const label = addLabel.trim();
+    const icsUrl = addUrl.trim();
+    if (!label || !icsUrl) return;
+    setAddError('');
+    setAddBusy(true);
     try {
-      await callGcalSyncNow(gcal.feedId);
+      await callGcalConnect({ icsUrl, label, defaultCat: addCat });
+      setAddLabel('');
+      setAddUrl('');
+      setAddCat('meeting');
     } catch (e) {
-      setGcalError((e as Error).message || 'Sync failed.');
+      setAddError((e as Error).message || 'Could not connect.');
     } finally {
-      setGcalBusy('idle');
-    }
-  };
-
-  const disconnectGcal = async () => {
-    if (!gcal) return;
-    setGcalError('');
-    setGcalBusy('disconnecting');
-    try {
-      await callGcalDisconnect(gcal.feedId);
-    } catch (e) {
-      setGcalError((e as Error).message || 'Disconnect failed.');
-    } finally {
-      setGcalBusy('idle');
+      setAddBusy(false);
     }
   };
 
@@ -123,51 +106,58 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
           </div>
 
           <div className="modal-row">
-            <label className="modal-label">Google Calendar sync</label>
-            {gcal ? (
-              <div className="gcal-connected">
-                <div className="gcal-status">
-                  <span className="gcal-pill mono">
-                    <Icon name="check" size={10} /> CONNECTED
-                  </span>
-                  {gcal.lastSyncAt && (
-                    <span className="gcal-meta mono">
-                      last sync {gcal.lastSyncAt.toLocaleString()} · {gcal.lastSyncCount ?? 0} events
-                    </span>
-                  )}
-                </div>
-                <div className="gcal-actions">
-                  <Btn variant="primary" leading="repeat" onClick={syncGcal} disabled={gcalBusy !== 'idle'}>
-                    {gcalBusy === 'syncing' ? 'Syncing…' : 'Sync now'}
-                  </Btn>
-                  <Btn variant="ghost" danger leading="trash" onClick={disconnectGcal} disabled={gcalBusy !== 'idle'}>
-                    Disconnect
-                  </Btn>
-                </div>
-                <div className="access-empty mono gcal-hint">
-                  The calendar URL is stored server-side and never returned to the browser.
-                  To rotate it: in Google Calendar settings, reset the secret address, then disconnect and reconnect here.
-                </div>
-              </div>
-            ) : (
-              <div className="gcal-connect">
-                <input
-                  type="url"
-                  className="modal-input mono"
-                  placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"
-                  value={icsUrl}
-                  onChange={(e) => setIcsUrl(e.target.value)}
-                />
-                <Btn variant="primary" leading="check" onClick={connectGcal} disabled={gcalBusy !== 'idle' || !icsUrl.trim()}>
-                  {gcalBusy === 'connecting' ? 'Connecting…' : 'Connect'}
-                </Btn>
-                <div className="access-empty mono gcal-hint">
-                  Paste the “secret address in iCal format” from your Google Calendar settings.
-                  Pulls every 30 minutes; one-way (GCal → app).
-                </div>
-              </div>
+            <label className="modal-label">
+              Google Calendar sync · {feeds.length} connected
+            </label>
+            {feeds.length > 0 && (
+              <ul className="gcal-feed-list">
+                {feeds.map((f) => (
+                  <FeedRow key={f.feedId} feed={f} />
+                ))}
+              </ul>
             )}
-            {gcalError && <div className="access-empty mono">{gcalError}</div>}
+            <div className="gcal-add">
+              <input
+                type="text"
+                className="modal-input"
+                placeholder="Label (e.g. Engineering Calendar)"
+                value={addLabel}
+                maxLength={LABEL_MAX}
+                onChange={(e) => setAddLabel(e.target.value)}
+              />
+              <input
+                type="url"
+                className="modal-input mono"
+                placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"
+                value={addUrl}
+                onChange={(e) => setAddUrl(e.target.value)}
+              />
+              <div className="gcal-add-row">
+                <select
+                  className="twk-select"
+                  value={addCat}
+                  onChange={(e) => setAddCat(e.target.value as CategoryId)}
+                  aria-label="Default category"
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c.id} value={c.id}>Default: {c.label}</option>
+                  ))}
+                </select>
+                <Btn
+                  variant="primary"
+                  leading="plus"
+                  onClick={connectFeed}
+                  disabled={addBusy || !addLabel.trim() || !addUrl.trim()}
+                >
+                  {addBusy ? 'Connecting…' : 'Connect'}
+                </Btn>
+              </div>
+              <div className="access-empty mono gcal-hint">
+                Paste the “secret address in iCal format” from each Google Calendar’s settings.
+                Pulls every 30 minutes; one-way (GCal → app).
+              </div>
+              {addError && <div className="access-empty mono">{addError}</div>}
+            </div>
           </div>
 
           <div className="modal-row">
@@ -195,5 +185,132 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
         </div>
       </div>
     </div>
+  );
+};
+
+type FeedBusy = 'syncing' | 'disconnecting' | 'renaming' | null;
+
+const FeedRow = ({ feed }: { feed: GcalFeedStatus }) => {
+  const [busy, setBusy] = useState<FeedBusy>(null);
+  const [error, setError] = useState('');
+  const [confirmingDisconnect, setConfirmingDisconnect] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draftLabel, setDraftLabel] = useState(feed.label ?? '');
+
+  const sync = async () => {
+    setError('');
+    setBusy('syncing');
+    try {
+      await callGcalSyncNow(feed.feedId);
+    } catch (e) {
+      setError((e as Error).message || 'Sync failed.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const disconnect = async () => {
+    setError('');
+    setBusy('disconnecting');
+    try {
+      await callGcalDisconnect(feed.feedId);
+    } catch (e) {
+      setError((e as Error).message || 'Disconnect failed.');
+      setBusy(null);
+    }
+    // No need to clear busy on success — the row will unmount.
+  };
+
+  const saveLabel = async () => {
+    const label = draftLabel.trim();
+    if (!label || label === feed.label) {
+      setEditing(false);
+      setDraftLabel(feed.label ?? '');
+      return;
+    }
+    setError('');
+    setBusy('renaming');
+    try {
+      await callGcalRename(feed.feedId, label);
+      setEditing(false);
+    } catch (e) {
+      setError((e as Error).message || 'Rename failed.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const catLabel = feed.defaultCat ? (CAT_BY_ID[feed.defaultCat]?.label ?? feed.defaultCat) : '—';
+  const lastSync = feed.lastSyncAt ? feed.lastSyncAt.toLocaleString() : 'never';
+  const isBusy = busy !== null;
+
+  return (
+    <li className="gcal-feed-row">
+      <div className="gcal-feed-main">
+        <div className="gcal-feed-head">
+          {editing ? (
+            <input
+              type="text"
+              className="modal-input gcal-feed-label-input"
+              value={draftLabel}
+              maxLength={LABEL_MAX}
+              autoFocus
+              onChange={(e) => setDraftLabel(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveLabel();
+                if (e.key === 'Escape') { setEditing(false); setDraftLabel(feed.label ?? ''); }
+              }}
+              onBlur={saveLabel}
+              disabled={busy === 'renaming'}
+            />
+          ) : (
+            <>
+              <span className="gcal-feed-label">{feed.label || '(unlabeled feed)'}</span>
+              <button
+                type="button"
+                className="iconbtn gcal-feed-edit"
+                aria-label="Rename feed"
+                onClick={() => { setDraftLabel(feed.label ?? ''); setEditing(true); }}
+                disabled={isBusy}
+              >
+                <Icon name="edit" size={11} />
+              </button>
+            </>
+          )}
+          <span className="gcal-pill mono">
+            <Icon name="check" size={10} /> CONNECTED
+          </span>
+        </div>
+        <div className="gcal-meta mono">
+          last sync {lastSync} · {feed.lastSyncCount ?? 0} events · default category: {catLabel}
+        </div>
+        {error && <div className="access-empty mono">{error}</div>}
+        {confirmingDisconnect && (
+          <div className="gcal-confirm">
+            <span className="gcal-confirm-text mono">
+              Disconnect will stop syncing; existing events stay. Are you sure?
+            </span>
+            <div className="gcal-actions">
+              <Btn variant="ghost" danger leading="trash" onClick={disconnect} disabled={isBusy}>
+                {busy === 'disconnecting' ? 'Disconnecting…' : 'Yes, disconnect'}
+              </Btn>
+              <Btn variant="ghost" onClick={() => setConfirmingDisconnect(false)} disabled={isBusy}>
+                Cancel
+              </Btn>
+            </div>
+          </div>
+        )}
+      </div>
+      {!confirmingDisconnect && (
+        <div className="gcal-actions">
+          <Btn variant="ghost" leading="repeat" onClick={sync} disabled={isBusy}>
+            {busy === 'syncing' ? 'Syncing…' : 'Sync now'}
+          </Btn>
+          <Btn variant="ghost" danger leading="trash" onClick={() => setConfirmingDisconnect(true)} disabled={isBusy}>
+            Disconnect
+          </Btn>
+        </div>
+      )}
+    </li>
   );
 };
