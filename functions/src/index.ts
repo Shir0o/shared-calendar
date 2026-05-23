@@ -155,8 +155,12 @@ export const gcalDisconnect = onCall(async (req) => {
   if (!feedId) throw new HttpsError('invalid-argument', 'feedId is required.');
   const clearEvents = req.data?.clearEvents === true;
 
-  await FEED(feedId).delete();
-  await STATUS().set({ feeds: { [feedId]: FieldValue.delete() } }, { merge: true });
+  // Atomic: a half-failed run would leave a feed doc with no aggregate entry
+  // (or vice versa). Match the batched pattern in gcalRename.
+  const batch = db.batch();
+  batch.delete(FEED(feedId));
+  batch.update(STATUS(), { [`feeds.${feedId}`]: FieldValue.delete() });
+  await batch.commit();
 
   // Optionally purge all synced events that came from this feed. We do this
   // *after* the feed-doc delete so a half-failed run leaves no zombie source
@@ -183,23 +187,26 @@ export const gcalPurgeOrphan = onCall(async (req) => {
   return GcalPurgeOrphanResponse.parse({ ok: true, deleted });
 });
 
+// Paginate so a feed with thousands of events doesn't OOM the function or
+// blow past the 9-min timeout. .select() projects away field data — we only
+// need refs to delete.
+const PAGE = 400;
 async function deleteEventsByFeed(feedId: string): Promise<number> {
-  const snap = await db.collection('events').where('gcalFeedId', '==', feedId).get();
-  if (snap.empty) return 0;
-  let batch = db.batch();
-  let ops = 0;
   let total = 0;
-  for (const docSnap of snap.docs) {
-    batch.delete(docSnap.ref);
-    ops++;
-    total++;
-    if (ops >= 400) {
-      await batch.commit();
-      batch = db.batch();
-      ops = 0;
-    }
+  for (;;) {
+    const snap = await db
+      .collection('events')
+      .where('gcalFeedId', '==', feedId)
+      .select()
+      .limit(PAGE)
+      .get();
+    if (snap.empty) break;
+    const batch = db.batch();
+    snap.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    total += snap.size;
+    if (snap.size < PAGE) break;
   }
-  if (ops > 0) await batch.commit();
   return total;
 }
 

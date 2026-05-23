@@ -72,16 +72,19 @@ export function subscribeCategoryOverrides(
 }
 
 // Owner-only writes. Rules enforce.
+// The Firebase JS SDK does NOT interpret dotted keys in setDoc({merge:true})
+// as nested paths — they'd land as literal "overrides.foo.label" fields.
+// Use the nested-object shape; merge:true preserves sibling overrides.
 export async function setCategoryOverride(
   id: CategoryId,
   patch: CategoryOverride,
 ): Promise<void> {
-  // Build dotted-path update so we don't clobber sibling overrides.
-  const update: Record<string, unknown> = {};
-  if (patch.label !== undefined) update[`overrides.${id}.label`] = patch.label;
-  if (patch.hue !== undefined) update[`overrides.${id}.hue`] = patch.hue;
-  if (Object.keys(update).length === 0) return;
-  await setDoc(doc(db, 'config', 'categories'), update, { merge: true });
+  if (Object.keys(patch).length === 0) return;
+  await setDoc(
+    doc(db, 'config', 'categories'),
+    { overrides: { [id]: patch } },
+    { merge: true },
+  );
 }
 
 export async function clearCategoryOverride(id: CategoryId): Promise<void> {
