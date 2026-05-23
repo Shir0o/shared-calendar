@@ -52,5 +52,12 @@ service cloud.firestore {
     match /config/gcal_feeds/feeds/{feedId} {
       allow read, write: if false;
     }
+
+    // Category label/hue overrides. Anyone signed in can read so renamed
+    // labels render for members; only the owner can edit them.
+    match /config/categories {
+      allow read:  if signedIn();
+      allow write: if isOwner();
+    }
   }
 }

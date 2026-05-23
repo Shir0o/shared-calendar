@@ -50,15 +50,36 @@ export interface CalendarEvent {
   __instanceDate?: string;
 }
 
-export const CATEGORIES: Category[] = [
-  { id: 'product', label: 'Product', hue: 240, dot: 'oklch(0.62 0.15 240)', soft: 'oklch(0.95 0.04 240)', ink: 'oklch(0.32 0.13 240)' },
-  { id: 'meeting', label: 'Meeting', hue: 200, dot: 'oklch(0.62 0.13 200)', soft: 'oklch(0.95 0.035 200)', ink: 'oklch(0.32 0.11 200)' },
-  { id: 'social', label: 'Social', hue: 150, dot: 'oklch(0.62 0.13 150)', soft: 'oklch(0.95 0.04 150)', ink: 'oklch(0.34 0.11 150)' },
-  { id: 'workshop', label: 'Workshop', hue: 300, dot: 'oklch(0.62 0.14 300)', soft: 'oklch(0.95 0.04 300)', ink: 'oklch(0.34 0.13 300)' },
-  { id: 'deadline', label: 'Deadline', hue: 28, dot: 'oklch(0.62 0.16 28)', soft: 'oklch(0.95 0.05 28)', ink: 'oklch(0.36 0.14 28)' },
-  { id: 'travel', label: 'Travel', hue: 85, dot: 'oklch(0.65 0.13 85)', soft: 'oklch(0.95 0.045 85)', ink: 'oklch(0.36 0.12 85)' },
-  { id: 'holiday', label: 'Holiday', hue: 0, dot: 'oklch(0.65 0.02 0)', soft: 'oklch(0.95 0.005 0)', ink: 'oklch(0.40 0.01 0)' },
-];
+// Per-category chroma values were tuned individually in the defaults below
+// (e.g. holiday uses chroma 0.02 for a neutral grey). When the user picks a
+// custom hue we re-derive dot/soft/ink with a single shared formula so the
+// pickers stay simple — exact recreation of the per-category chroma is sacrificed
+// for editability. Defaults are preserved verbatim and used as the reset target.
+export function tokensForHue(hue: number): { dot: string; soft: string; ink: string } {
+  const h = ((hue % 360) + 360) % 360;
+  return {
+    dot: `oklch(0.62 0.14 ${h})`,
+    soft: `oklch(0.95 0.04 ${h})`,
+    ink: `oklch(0.34 0.12 ${h})`,
+  };
+}
+
+export const DEFAULT_CATEGORIES: readonly Category[] = Object.freeze([
+  Object.freeze({ id: 'product' as CategoryId, label: 'Product', hue: 240, dot: 'oklch(0.62 0.15 240)', soft: 'oklch(0.95 0.04 240)', ink: 'oklch(0.32 0.13 240)' }),
+  Object.freeze({ id: 'meeting' as CategoryId, label: 'Meeting', hue: 200, dot: 'oklch(0.62 0.13 200)', soft: 'oklch(0.95 0.035 200)', ink: 'oklch(0.32 0.11 200)' }),
+  Object.freeze({ id: 'social' as CategoryId, label: 'Social', hue: 150, dot: 'oklch(0.62 0.13 150)', soft: 'oklch(0.95 0.04 150)', ink: 'oklch(0.34 0.11 150)' }),
+  Object.freeze({ id: 'workshop' as CategoryId, label: 'Workshop', hue: 300, dot: 'oklch(0.62 0.14 300)', soft: 'oklch(0.95 0.04 300)', ink: 'oklch(0.34 0.13 300)' }),
+  Object.freeze({ id: 'deadline' as CategoryId, label: 'Deadline', hue: 28, dot: 'oklch(0.62 0.16 28)', soft: 'oklch(0.95 0.05 28)', ink: 'oklch(0.36 0.14 28)' }),
+  Object.freeze({ id: 'travel' as CategoryId, label: 'Travel', hue: 85, dot: 'oklch(0.65 0.13 85)', soft: 'oklch(0.95 0.045 85)', ink: 'oklch(0.36 0.12 85)' }),
+  Object.freeze({ id: 'holiday' as CategoryId, label: 'Holiday', hue: 0, dot: 'oklch(0.65 0.02 0)', soft: 'oklch(0.95 0.005 0)', ink: 'oklch(0.40 0.01 0)' }),
+]);
+
+// CATEGORIES and CAT_BY_ID are intentionally mutable: src/lib/categories.ts
+// rewrites their entries in place when the owner edits a category's label or
+// hue. The bindings never change shape (same 7 IDs in the same order); only
+// the label/color fields on each entry. Re-renders are driven by a separate
+// `useCategoryVersion()` hook so React sees the change.
+export const CATEGORIES: Category[] = DEFAULT_CATEGORIES.map((c) => ({ ...c }));
 
 export const CAT_BY_ID: Record<string, Category> = Object.fromEntries(
   CATEGORIES.map((c) => [c.id, c]),

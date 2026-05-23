@@ -14,8 +14,17 @@ export const GcalConnectResponse = z.object({
 });
 export type GcalConnectResponse = z.infer<typeof GcalConnectResponse>;
 
-export const GcalDisconnectResponse = z.object({ ok: z.literal(true) });
+export const GcalDisconnectResponse = z.object({
+  ok: z.literal(true),
+  deleted: z.number().int().nonnegative().optional(),
+});
 export type GcalDisconnectResponse = z.infer<typeof GcalDisconnectResponse>;
+
+export const GcalPurgeOrphanResponse = z.object({
+  ok: z.literal(true),
+  deleted: z.number().int().nonnegative(),
+});
+export type GcalPurgeOrphanResponse = z.infer<typeof GcalPurgeOrphanResponse>;
 
 export const GcalSyncNowResponse = z.object({
   ok: z.literal(true),

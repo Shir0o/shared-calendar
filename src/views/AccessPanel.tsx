@@ -5,12 +5,25 @@ import { addAdmin, revokeAdmin, subscribeAdmins, type AdminRecord } from '../lib
 import {
   callGcalConnect,
   callGcalDisconnect,
+  callGcalPurgeOrphan,
   callGcalRename,
   callGcalSyncNow,
+  fetchSyncedFeedCounts,
   subscribeGcalFeeds,
   type GcalFeedStatus,
 } from '../lib/gcal';
-import { CATEGORIES, CAT_BY_ID, type CategoryId } from '../lib/calendar';
+import {
+  CATEGORIES,
+  CAT_BY_ID,
+  DEFAULT_CATEGORIES,
+  tokensForHue,
+  type CategoryId,
+} from '../lib/calendar';
+import {
+  clearCategoryOverride,
+  setCategoryOverride,
+  useCategoryVersion,
+} from '../lib/categories';
 import { Btn, Icon } from '../components/ui';
 
 const LABEL_MAX = 40;
@@ -29,6 +42,20 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
   // ── Google Calendar (ICS-URL) feeds ───────────────────────────────────────
   const [feeds, setFeeds] = useState<GcalFeedStatus[]>([]);
   useEffect(() => subscribeGcalFeeds(setFeeds), []);
+
+  // ── Orphaned synced events (events whose gcalFeedId is no longer in config) ─
+  // Re-fetch whenever the feed list changes (e.g. after a purge).
+  const [syncedCounts, setSyncedCounts] = useState<Record<string, number>>({});
+  const [orphanReloadKey, setOrphanReloadKey] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    fetchSyncedFeedCounts()
+      .then((c) => { if (alive) setSyncedCounts(c); })
+      .catch(() => { /* surfaced inline if user tries to act */ });
+    return () => { alive = false; };
+  }, [orphanReloadKey, feeds.length]);
+  const feedIds = new Set(feeds.map((f) => f.feedId));
+  const orphanIds = Object.keys(syncedCounts).filter((id) => !feedIds.has(id));
 
   // Add-feed form
   const [addLabel, setAddLabel] = useState('');
@@ -106,13 +133,34 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
           </div>
 
           <div className="modal-row">
+            <label className="modal-label">Categories</label>
+            <CategoriesEditor />
+          </div>
+
+          <div className="modal-row">
             <label className="modal-label">
               Google Calendar sync · {feeds.length} connected
             </label>
             {feeds.length > 0 && (
               <ul className="gcal-feed-list">
                 {feeds.map((f) => (
-                  <FeedRow key={f.feedId} feed={f} />
+                  <FeedRow
+                    key={f.feedId}
+                    feed={f}
+                    eventCount={syncedCounts[f.feedId] ?? 0}
+                  />
+                ))}
+              </ul>
+            )}
+            {orphanIds.length > 0 && (
+              <ul className="gcal-feed-list">
+                {orphanIds.map((id) => (
+                  <OrphanRow
+                    key={id}
+                    feedId={id}
+                    count={syncedCounts[id] ?? 0}
+                    onPurged={() => setOrphanReloadKey((k) => k + 1)}
+                  />
                 ))}
               </ul>
             )}
@@ -190,10 +238,11 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
 
 type FeedBusy = 'syncing' | 'disconnecting' | 'renaming' | null;
 
-const FeedRow = ({ feed }: { feed: GcalFeedStatus }) => {
+const FeedRow = ({ feed, eventCount }: { feed: GcalFeedStatus; eventCount: number }) => {
   const [busy, setBusy] = useState<FeedBusy>(null);
   const [error, setError] = useState('');
   const [confirmingDisconnect, setConfirmingDisconnect] = useState(false);
+  const [clearOnDisconnect, setClearOnDisconnect] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draftLabel, setDraftLabel] = useState(feed.label ?? '');
   // Escape sets editing=false, which unmounts the input and fires onBlur.
@@ -216,7 +265,7 @@ const FeedRow = ({ feed }: { feed: GcalFeedStatus }) => {
     setError('');
     setBusy('disconnecting');
     try {
-      await callGcalDisconnect(feed.feedId);
+      await callGcalDisconnect(feed.feedId, clearOnDisconnect);
     } catch (e) {
       setError((e as Error).message || 'Disconnect failed.');
       setBusy(null);
@@ -300,7 +349,18 @@ const FeedRow = ({ feed }: { feed: GcalFeedStatus }) => {
         {confirmingDisconnect && (
           <div className="gcal-confirm">
             <span className="gcal-confirm-text mono">
-              Disconnect will stop syncing; existing events stay. Are you sure?
+              Disconnect will stop syncing. {eventCount > 0 && (
+                <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginLeft: 4 }}>
+                  <input
+                    type="checkbox"
+                    checked={clearOnDisconnect}
+                    onChange={(e) => setClearOnDisconnect(e.target.checked)}
+                    disabled={isBusy}
+                  />
+                  Also delete {eventCount} synced event{eventCount === 1 ? '' : 's'}.
+                </label>
+              )}
+              {eventCount === 0 && ' Existing events stay.'}
             </span>
             <div className="gcal-actions">
               <Btn variant="ghost" danger leading="trash" onClick={disconnect} disabled={isBusy}>
@@ -323,6 +383,198 @@ const FeedRow = ({ feed }: { feed: GcalFeedStatus }) => {
           </Btn>
         </div>
       )}
+    </li>
+  );
+};
+
+// A feed whose entry is missing from config/gcal but still has events tagged
+// with its feedId. Surfaces the count and a one-click purge so the owner can
+// clean up state left behind by past dev sessions or partially-failed connects.
+const OrphanRow = ({
+  feedId,
+  count,
+  onPurged,
+}: {
+  feedId: string;
+  count: number;
+  onPurged: () => void;
+}) => {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [confirming, setConfirming] = useState(false);
+
+  const purge = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      await callGcalPurgeOrphan(feedId);
+      onPurged();
+    } catch (e) {
+      setError((e as Error).message || 'Purge failed.');
+      setBusy(false);
+    }
+  };
+
+  const shortId = feedId.length > 12 ? feedId.slice(0, 8) + '…' : feedId;
+
+  return (
+    <li className="gcal-feed-row">
+      <div className="gcal-feed-main">
+        <div className="gcal-feed-head">
+          <span className="gcal-feed-label">Orphaned sync · <span className="mono">{shortId}</span></span>
+          <span className="gcal-pill is-orphan mono">
+            <Icon name="warn" size={10} /> ORPHAN
+          </span>
+        </div>
+        <div className="gcal-meta mono">
+          {count} synced event{count === 1 ? '' : 's'} · feed is no longer connected
+        </div>
+        {error && <div className="access-empty mono">{error}</div>}
+        {confirming && (
+          <div className="gcal-confirm">
+            <span className="gcal-confirm-text mono">
+              Delete all {count} event{count === 1 ? '' : 's'} from this orphaned feed?
+            </span>
+            <div className="gcal-actions">
+              <Btn variant="ghost" danger leading="trash" onClick={purge} disabled={busy}>
+                {busy ? 'Deleting…' : 'Yes, delete'}
+              </Btn>
+              <Btn variant="ghost" onClick={() => setConfirming(false)} disabled={busy}>
+                Cancel
+              </Btn>
+            </div>
+          </div>
+        )}
+      </div>
+      {!confirming && (
+        <div className="gcal-actions">
+          <Btn variant="ghost" danger leading="trash" onClick={() => setConfirming(true)} disabled={busy}>
+            Delete {count} event{count === 1 ? '' : 's'}
+          </Btn>
+        </div>
+      )}
+    </li>
+  );
+};
+
+// Editable list of the 7 category labels + hues. Defaults live in calendar.ts;
+// overrides are persisted to config/categories and applied via subscribeCategoryOverrides.
+const CategoriesEditor = () => {
+  // useCategoryVersion triggers a re-render whenever overrides arrive — the
+  // CATEGORIES array is mutated in place, so we need the version bump for React.
+  useCategoryVersion();
+  return (
+    <ul className="cat-edit-list">
+      {CATEGORIES.map((c, i) => (
+        <CategoryEditRow key={c.id} current={c} fallback={DEFAULT_CATEGORIES[i]} />
+      ))}
+    </ul>
+  );
+};
+
+const CategoryEditRow = ({
+  current,
+  fallback,
+}: {
+  current: { id: CategoryId; label: string; hue: number; dot: string };
+  fallback: { label: string; hue: number };
+}) => {
+  const [draftLabel, setDraftLabel] = useState(current.label);
+  const [draftHue, setDraftHue] = useState(current.hue);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  // Keep local drafts in sync if the doc changes from another tab.
+  useEffect(() => { setDraftLabel(current.label); }, [current.label]);
+  useEffect(() => { setDraftHue(current.hue); }, [current.hue]);
+
+  const isOverridden = current.label !== fallback.label || current.hue !== fallback.hue;
+  const previewDot = tokensForHue(draftHue).dot;
+
+  const saveLabel = async () => {
+    const label = draftLabel.trim();
+    if (!label || label === current.label) {
+      setDraftLabel(current.label);
+      return;
+    }
+    setError('');
+    setBusy(true);
+    try {
+      await setCategoryOverride(current.id, { label });
+    } catch (e) {
+      setError((e as Error).message || 'Save failed.');
+      setDraftLabel(current.label);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const commitHue = async (hue: number) => {
+    if (hue === current.hue) return;
+    setError('');
+    setBusy(true);
+    try {
+      await setCategoryOverride(current.id, { hue });
+    } catch (e) {
+      setError((e as Error).message || 'Save failed.');
+      setDraftHue(current.hue);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reset = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      await clearCategoryOverride(current.id);
+    } catch (e) {
+      setError((e as Error).message || 'Reset failed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <li className="cat-edit-row">
+      <span
+        className="catdot"
+        style={{ width: 12, height: 12, background: previewDot, flex: 'none' }}
+      />
+      <input
+        type="text"
+        className="modal-input"
+        value={draftLabel}
+        maxLength={20}
+        onChange={(e) => setDraftLabel(e.target.value)}
+        onBlur={saveLabel}
+        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+        disabled={busy}
+        style={{ flex: 1, minWidth: 0 }}
+      />
+      <input
+        type="range"
+        min={0}
+        max={360}
+        step={1}
+        value={draftHue}
+        onChange={(e) => setDraftHue(+e.target.value)}
+        onMouseUp={(e) => commitHue(+(e.target as HTMLInputElement).value)}
+        onTouchEnd={(e) => commitHue(+(e.target as HTMLInputElement).value)}
+        onKeyUp={(e) => commitHue(+(e.target as HTMLInputElement).value)}
+        disabled={busy}
+        aria-label={`Hue for ${current.label}`}
+        style={{ flex: 'none', width: 110 }}
+      />
+      <Btn
+        variant="ghost"
+        leading="repeat"
+        onClick={reset}
+        disabled={busy || !isOverridden}
+      >
+        Reset
+      </Btn>
+      {error && <span className="access-empty mono" style={{ flexBasis: '100%' }}>{error}</span>}
     </li>
   );
 };

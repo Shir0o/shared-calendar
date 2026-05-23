@@ -26,6 +26,7 @@ import { planFeedSync, type ExistingDoc } from './sync.js';
 import {
   GcalConnectResponse,
   GcalDisconnectResponse,
+  GcalPurgeOrphanResponse,
   GcalSyncNowResponse,
 } from './schemas.js';
 
@@ -152,14 +153,62 @@ export const gcalDisconnect = onCall(async (req) => {
   if (!isOwner(req)) throw new HttpsError('permission-denied', 'Owner only.');
   const feedId = ((req.data?.feedId as string | undefined) ?? '').trim();
   if (!feedId) throw new HttpsError('invalid-argument', 'feedId is required.');
-  // Accept (but ignore for now) clearEvents — wiring comes with the multi-feed UI.
-  void (req.data?.clearEvents as boolean | undefined);
-  // We leave previously-synced events in place; the owner can delete manually
-  // or via a future "clear synced events" action.
-  await FEED(feedId).delete();
-  await STATUS().set({ feeds: { [feedId]: FieldValue.delete() } }, { merge: true });
-  return GcalDisconnectResponse.parse({ ok: true });
+  const clearEvents = req.data?.clearEvents === true;
+
+  // Atomic: a half-failed run would leave a feed doc with no aggregate entry
+  // (or vice versa). Match the batched pattern in gcalRename.
+  const batch = db.batch();
+  batch.delete(FEED(feedId));
+  batch.update(STATUS(), { [`feeds.${feedId}`]: FieldValue.delete() });
+  await batch.commit();
+
+  // Optionally purge all synced events that came from this feed. We do this
+  // *after* the feed-doc delete so a half-failed run leaves no zombie source
+  // that could re-create events on the next scheduled poll.
+  let deleted = 0;
+  if (clearEvents) {
+    deleted = await deleteEventsByFeed(feedId);
+  }
+  return GcalDisconnectResponse.parse({ ok: true, deleted });
 });
+
+// Purge events for a feed that's already gone from `config/gcal_feeds` (orphans).
+// The disconnect path uses the same helper; this callable surfaces it to the UI
+// so the owner can clean up state left behind by past dev sessions.
+export const gcalPurgeOrphan = onCall(async (req) => {
+  if (!isOwner(req)) throw new HttpsError('permission-denied', 'Owner only.');
+  const feedId = ((req.data?.feedId as string | undefined) ?? '').trim();
+  if (!feedId) throw new HttpsError('invalid-argument', 'feedId is required.');
+  const feedDoc = await FEED(feedId).get();
+  if (feedDoc.exists) {
+    throw new HttpsError('failed-precondition', 'Feed is still connected — disconnect it first.');
+  }
+  const deleted = await deleteEventsByFeed(feedId);
+  return GcalPurgeOrphanResponse.parse({ ok: true, deleted });
+});
+
+// Paginate so a feed with thousands of events doesn't OOM the function or
+// blow past the 9-min timeout. .select() projects away field data — we only
+// need refs to delete.
+const PAGE = 400;
+async function deleteEventsByFeed(feedId: string): Promise<number> {
+  let total = 0;
+  for (;;) {
+    const snap = await db
+      .collection('events')
+      .where('gcalFeedId', '==', feedId)
+      .select()
+      .limit(PAGE)
+      .get();
+    if (snap.empty) break;
+    const batch = db.batch();
+    snap.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    total += snap.size;
+    if (snap.size < PAGE) break;
+  }
+  return total;
+}
 
 export const gcalSyncNow = onCall(async (req) => {
   if (!(await isAdminOrOwner(req))) throw new HttpsError('permission-denied', 'Admin only.');
