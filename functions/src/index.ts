@@ -27,7 +27,11 @@ import { planFeedSync, type ExistingDoc } from './sync.js';
 initializeApp();
 const db = getFirestore();
 
-// Keep in sync with src/lib/firebase.ts + firestore.rules.
+// Source of truth: shared/owner.ts. Cloud Functions deploys only this
+// directory so we can't import across the workspace at runtime — the literal
+// is duplicated here and a drift-guard test (src/lib/owner.test.ts) keeps
+// these three sites (here, src/lib/firebase.ts via shared/, firestore.rules)
+// from disagreeing.
 const OWNER_EMAIL = 'yilongwang05@gmail.com';
 
 const STATUS = () => db.collection('config').doc('gcal');
