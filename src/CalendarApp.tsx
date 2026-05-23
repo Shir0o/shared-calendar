@@ -103,6 +103,23 @@ export const CalendarApp = () => {
   };
 
   const handleSave = (ev: CalendarEvent) => {
+    // Per-instance edit: ev carries __seriesId/__instanceDate → detach as a
+    // standalone event and add an exdate to the original series.
+    if (ev.__seriesId && ev.__instanceDate) {
+      const series = events.find((x) => x.id === ev.__seriesId);
+      if (series && series.rrule) {
+        const exdates = [...(series.rrule.exdates || []), ev.__instanceDate];
+        void saveEvent({ ...series, rrule: { ...series.rrule, exdates } });
+      }
+      const standalone: CalendarEvent = { ...ev, id: crypto.randomUUID() };
+      delete standalone.__seriesId;
+      delete standalone.__instanceDate;
+      delete standalone.rrule;
+      void saveEvent(standalone);
+      setEditingEvent(null);
+      setPickedEvent(null);
+      return;
+    }
     const targetId = ev.id && ev.id.includes('#') ? ev.id.split('#')[0] : ev.id;
     const persisted: CalendarEvent = { ...ev, id: targetId };
     delete persisted.__seriesId;
@@ -137,9 +154,9 @@ export const CalendarApp = () => {
 
   const onPickEvent = (ev: CalendarEvent) => setPickedEvent(ev);
 
-  const onEditEvent = (ev: CalendarEvent) => {
+  const onEditEvent = (ev: CalendarEvent, opts: { series?: boolean } = {}) => {
     if (!canEdit) return;
-    if (ev.__seriesId) {
+    if (ev.__seriesId && opts.series) {
       const series = events.find((e) => e.id === ev.__seriesId);
       if (series) {
         setEditingEvent(series);
@@ -147,6 +164,8 @@ export const CalendarApp = () => {
         return;
       }
     }
+    // Instance edit (or non-recurring): pass ev through with its instance
+    // markers intact so handleSave can detach it from the series.
     setEditingEvent(ev);
     setPickedEvent(null);
   };
@@ -286,7 +305,7 @@ export const CalendarApp = () => {
           allEvents={filtered}
           canEdit={canEdit}
           onClose={() => setPickedEvent(null)}
-          onEdit={() => onEditEvent(pickedEvent)}
+          onEdit={(opts) => onEditEvent(pickedEvent, opts)}
           onDelete={deleteEvent}
           onSkipInstance={skipInstance}
           onPickEvent={onPickEvent}

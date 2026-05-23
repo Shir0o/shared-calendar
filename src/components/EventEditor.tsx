@@ -31,10 +31,19 @@ interface EventEditorProps {
 
 export const EventEditor = ({ initial, allEvents, onSave, onCancel, onDelete }: EventEditorProps) => {
   const isNew = !initial.id;
+  // When editing a single recurrence instance, the editor produces a detached
+  // standalone event — hide series-level controls (recurrence editing).
+  const isInstanceEdit = !!initial.__seriesId && !!initial.__instanceDate;
   const [title, setTitle] = useState(initial.title || '');
   const [cat, setCat] = useState<CategoryId>(initial.cat || 'meeting');
   const [date, setDate] = useState<Date>(() => (initial.start ? initial.start : new Date()));
   const [allDay, setAllDay] = useState(!!initial.allDay);
+  // For all-day events, endDate is the *inclusive* last day shown to the user.
+  // `initial.end` is exclusive, so subtract one day on load.
+  const [endDate, setEndDate] = useState<Date>(() => {
+    if (initial.end) return addDays(initial.end, -1);
+    return initial.start ? initial.start : new Date();
+  });
   const [startH, setStartH] = useState(() => (initial.start ? initial.start.getHours() : 10));
   const [startM, setStartM] = useState(() => (initial.start ? initial.start.getMinutes() : 0));
   const [dur, setDur] = useState(initial.dur ?? 60);
@@ -48,6 +57,12 @@ export const EventEditor = ({ initial, allEvents, onSave, onCancel, onDelete }: 
     const start = new Date(date);
     if (allDay) start.setHours(0, 0, 0, 0);
     else start.setHours(startH, startM, 0, 0);
+    const effectiveEnd = endDate < date ? date : endDate;
+    const endExclusive = (() => {
+      const d = new Date(effectiveEnd);
+      d.setHours(0, 0, 0, 0);
+      return addDays(d, 1);
+    })();
     return {
       ...(initial as CalendarEvent),
       id: initial.id || '__draft',
@@ -58,10 +73,10 @@ export const EventEditor = ({ initial, allEvents, onSave, onCancel, onDelete }: 
       start,
       allDay,
       dur: allDay ? 0 : dur,
-      end: allDay ? addDays(start, 1) : undefined,
+      end: allDay ? endExclusive : undefined,
       rrule: rrule || undefined,
     };
-  }, [title, cat, date, allDay, startH, startM, dur, loc, notes, rrule, initial]);
+  }, [title, cat, date, allDay, endDate, startH, startM, dur, loc, notes, rrule, initial]);
 
   const expanded = useMemo(() => {
     const s = addDays(startOfMonth(date), -14);
@@ -79,6 +94,9 @@ export const EventEditor = ({ initial, allEvents, onSave, onCancel, onDelete }: 
     const start = new Date(date);
     if (allDay) start.setHours(0, 0, 0, 0);
     else start.setHours(startH, startM, 0, 0);
+    const effectiveEnd = endDate < date ? date : endDate;
+    const endDay = new Date(effectiveEnd);
+    endDay.setHours(0, 0, 0, 0);
     const out: CalendarEvent = {
       ...(initial as CalendarEvent),
       id: initial.id || crypto.randomUUID(),
@@ -89,7 +107,7 @@ export const EventEditor = ({ initial, allEvents, onSave, onCancel, onDelete }: 
       start,
       allDay,
       dur: allDay ? 0 : dur,
-      end: allDay ? addDays(start, 1) : undefined,
+      end: allDay ? addDays(endDay, 1) : undefined,
       rrule: rrule || undefined,
     };
     onSave(out);
@@ -127,14 +145,16 @@ export const EventEditor = ({ initial, allEvents, onSave, onCancel, onDelete }: 
 
           <div className="modal-row modal-row-split">
             <div className="modal-row">
-              <label className="modal-label">Date</label>
+              <label className="modal-label">{allDay ? 'Starts' : 'Date'}</label>
               <input
                 type="date"
                 className="modal-input mono"
                 value={isoDate(date)}
                 onChange={(e) => {
                   const [y, m, d] = e.target.value.split('-').map(Number);
-                  setDate(new Date(y, m - 1, d));
+                  const next = new Date(y, m - 1, d);
+                  setDate(next);
+                  if (endDate < next) setEndDate(next);
                 }}
               />
             </div>
@@ -148,6 +168,23 @@ export const EventEditor = ({ initial, allEvents, onSave, onCancel, onDelete }: 
               </button>
             </div>
           </div>
+
+          {allDay && (
+            <div className="modal-row">
+              <label className="modal-label">Ends</label>
+              <input
+                type="date"
+                className="modal-input mono"
+                value={isoDate(endDate)}
+                min={isoDate(date)}
+                onChange={(e) => {
+                  const [y, m, d] = e.target.value.split('-').map(Number);
+                  const next = new Date(y, m - 1, d);
+                  setEndDate(next < date ? date : next);
+                }}
+              />
+            </div>
+          )}
 
           {!allDay && (
             <div className="modal-row modal-row-split">
@@ -172,14 +209,18 @@ export const EventEditor = ({ initial, allEvents, onSave, onCancel, onDelete }: 
                 </div>
               </div>
               <div className="modal-row">
-                <label className="modal-label">Duration</label>
-                <select className="modal-input mono" value={dur} onChange={(e) => setDur(+e.target.value)}>
-                  {[15, 30, 45, 60, 90, 120, 180, 240].map((m) => (
-                    <option key={m} value={m}>
-                      {m < 60 ? m + 'm' : m / 60 + 'h'}
-                    </option>
-                  ))}
-                </select>
+                <label className="modal-label">Duration (min)</label>
+                <input
+                  type="number"
+                  className="modal-input mono"
+                  min={5}
+                  step={5}
+                  value={dur}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    setDur(Number.isFinite(v) && v > 0 ? v : 5);
+                  }}
+                />
               </div>
             </div>
           )}
@@ -227,7 +268,7 @@ export const EventEditor = ({ initial, allEvents, onSave, onCancel, onDelete }: 
             </div>
           )}
 
-          {!allDay && <RecurrenceBlock rrule={rrule} setRrule={setRrule} date={date} />}
+          {!allDay && !isInstanceEdit && <RecurrenceBlock rrule={rrule} setRrule={setRrule} date={date} />}
 
           {draftConflicts.length > 0 && (
             <div className="conflict-banner is-inline">
