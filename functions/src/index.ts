@@ -1,19 +1,28 @@
 // Cloud Functions for the shared calendar.
-// Currently implements one-way Google Calendar import via an "ICS secret URL"
-// pasted by the owner. (GCal's ICS feed is read-only, so this direction is
-// pull-only; the upgrade path to two-way OAuth is documented in the plan.)
+// One-way Google Calendar import via per-feed "ICS secret URL"s pasted by
+// the owner. (GCal's ICS feed is read-only, so the upgrade path to two-way
+// OAuth is documented in the plan.)
+//
+// Feed model (N feeds; current UI happens to surface N=1):
+//   config/gcal_feeds/{feedId} — server-only: { icsUrl, label, defaultCat?,
+//                                              connectedAt, connectedBy }
+//   config/gcal                — owner-readable aggregate status:
+//                                { feeds: { [feedId]: { label, lastSyncAt,
+//                                                       lastSyncCount } } }
 //
 // Functions:
-//   gcalConnect    (callable, owner-only)  — paste URL, validate, persist, run an initial pull
-//   gcalDisconnect (callable, owner-only)  — clear connection
-//   gcalSyncNow    (callable, admin/owner) — pull immediately
-//   gcalPoll       (scheduled, every 30m)  — auto-pull
+//   gcalConnect    (callable, owner-only)  — connect a new feed
+//   gcalDisconnect (callable, owner-only)  — disconnect a feed by id
+//   gcalSyncNow    (callable, admin/owner) — sync one feed (or all)
+//   gcalPoll       (scheduled, every 30m)  — auto-pull every feed in parallel
+import { randomUUID } from 'node:crypto';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { onCall, HttpsError, type CallableRequest } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
-import { docIdFromUid, eventsFromIcs, type ParsedEvent } from './ical.js';
+import { eventsFromIcs, type ParsedEvent } from './ical.js';
+import { planFeedSync, type ExistingDoc } from './sync.js';
 
 initializeApp();
 const db = getFirestore();
@@ -21,15 +30,26 @@ const db = getFirestore();
 // Keep in sync with src/lib/firebase.ts + firestore.rules.
 const OWNER_EMAIL = 'yilongwang05@gmail.com';
 
-// Two-doc split so the URL is never reachable from the client:
-//   STATUS  — owner-readable, holds non-secret connection metadata
-//   SECRET  — admin-SDK only (rules deny all client access), holds the URL
 const STATUS = () => db.collection('config').doc('gcal');
-const SECRET = () => db.collection('config').doc('gcal_secret');
+const FEEDS = () => db.collection('config').doc('gcal_feeds').collection('feeds');
+const FEED = (id: string) => FEEDS().doc(id);
 
-async function readIcsUrl(): Promise<string | null> {
-  const snap = await SECRET().get();
-  return (snap.data()?.icsUrl as string | undefined) ?? null;
+interface FeedDoc {
+  icsUrl: string;
+  label?: string;
+  defaultCat?: string;
+}
+
+async function readFeed(feedId: string): Promise<FeedDoc | null> {
+  const snap = await FEED(feedId).get();
+  if (!snap.exists) return null;
+  const d = snap.data() as FeedDoc;
+  return d.icsUrl ? d : null;
+}
+
+async function listFeedIds(): Promise<string[]> {
+  const snap = await FEEDS().get();
+  return snap.docs.map((d) => d.id);
 }
 
 function callerEmail(req: CallableRequest): string {
@@ -70,6 +90,8 @@ async function fetchIcs(url: string): Promise<string> {
 export const gcalConnect = onCall(async (req) => {
   if (!isOwner(req)) throw new HttpsError('permission-denied', 'Owner only.');
   const icsUrl = ((req.data?.icsUrl as string | undefined) ?? '').trim();
+  const label = ((req.data?.label as string | undefined) ?? '').trim();
+  const defaultCat = (req.data?.defaultCat as string | undefined) || undefined;
   if (!/^https?:\/\//i.test(icsUrl)) throw new HttpsError('invalid-argument', 'A full https:// URL is required.');
 
   const text = await fetchIcs(icsUrl);
@@ -78,86 +100,120 @@ export const gcalConnect = onCall(async (req) => {
   try { parsed = eventsFromIcs(text); }
   catch { throw new HttpsError('failed-precondition', 'That URL did not return a valid iCalendar feed.'); }
 
-  await SECRET().set({ icsUrl });
-  await STATUS().set({
-    connected: true,
+  const feedId = randomUUID();
+  await FEED(feedId).set({
+    icsUrl,
+    label: label || null,
+    defaultCat: defaultCat || null,
     connectedAt: FieldValue.serverTimestamp(),
     connectedBy: callerEmail(req),
-  }, { merge: true });
+  });
 
-  const count = await applyPull(parsed);
-  await STATUS().set({ lastSyncAt: FieldValue.serverTimestamp(), lastSyncCount: count }, { merge: true });
-  return { ok: true, count };
+  const count = await applyPull(feedId, defaultCat, parsed);
+  await STATUS().set({
+    feeds: { [feedId]: {
+      label: label || null,
+      lastSyncAt: FieldValue.serverTimestamp(),
+      lastSyncCount: count,
+    } },
+  }, { merge: true });
+  return { ok: true, feedId, count };
 });
 
 export const gcalDisconnect = onCall(async (req) => {
   if (!isOwner(req)) throw new HttpsError('permission-denied', 'Owner only.');
-  // We leave previously-synced events in place. The owner can delete them
-  // manually or via a future "clear synced events" action.
-  await Promise.all([SECRET().delete(), STATUS().delete()]);
+  const feedId = ((req.data?.feedId as string | undefined) ?? '').trim();
+  if (!feedId) throw new HttpsError('invalid-argument', 'feedId is required.');
+  // Accept (but ignore for now) clearEvents — wiring comes with the multi-feed UI.
+  void (req.data?.clearEvents as boolean | undefined);
+  // We leave previously-synced events in place; the owner can delete manually
+  // or via a future "clear synced events" action.
+  await FEED(feedId).delete();
+  await STATUS().set({ feeds: { [feedId]: FieldValue.delete() } }, { merge: true });
   return { ok: true };
 });
 
 export const gcalSyncNow = onCall(async (req) => {
   if (!(await isAdminOrOwner(req))) throw new HttpsError('permission-denied', 'Admin only.');
-  const url = await readIcsUrl();
-  if (!url) throw new HttpsError('failed-precondition', 'Google Calendar is not connected.');
-  const text = await fetchIcs(url);
-  const parsed = eventsFromIcs(text);
-  const count = await applyPull(parsed);
-  await STATUS().set({ lastSyncAt: FieldValue.serverTimestamp(), lastSyncCount: count }, { merge: true });
-  return { ok: true, count };
+  const feedId = ((req.data?.feedId as string | undefined) ?? '').trim();
+  const ids = feedId ? [feedId] : await listFeedIds();
+  if (ids.length === 0) throw new HttpsError('failed-precondition', 'No Google Calendar feeds are connected.');
+  let total = 0;
+  for (const id of ids) {
+    const count = await syncOneFeed(id);
+    if (count !== null) total += count;
+  }
+  return { ok: true, count: total };
 });
 
 // ─── Scheduled auto-pull ─────────────────────────────────────────────────────
 export const gcalPoll = onSchedule('every 30 minutes', async () => {
-  const url = await readIcsUrl();
-  if (!url) return;
-  try {
-    const text = await fetchIcs(url);
-    const parsed = eventsFromIcs(text);
-    const count = await applyPull(parsed);
-    await STATUS().set({ lastSyncAt: FieldValue.serverTimestamp(), lastSyncCount: count }, { merge: true });
-    logger.info(`gcalPoll synced ${count} events`);
-  } catch (e) {
-    logger.error('gcalPoll failed', e);
+  const ids = await listFeedIds();
+  if (ids.length === 0) {
+    logger.info('gcalPoll: no feeds connected, skipping');
+    return;
   }
+  const results = await Promise.allSettled(ids.map((id) => syncOneFeed(id)));
+  results.forEach((r, i) => {
+    const id = ids[i];
+    if (r.status === 'fulfilled') {
+      logger.info(`gcalPoll feed=${id} synced ${r.value ?? 0} events`);
+    } else {
+      logger.error(`gcalPoll feed=${id} failed`, r.reason);
+    }
+  });
 });
 
-// ─── Apply a parsed feed: upsert + delete-missing ────────────────────────────
-async function applyPull(parsed: ParsedEvent[]): Promise<number> {
-  // Snapshot existing GCal-sourced docs to detect deletions.
-  const existing = await db.collection('events').where('syncOrigin', '==', 'gcal').get();
-  const existingByUid = new Map<string, string>();
-  existing.forEach((d) => {
+// Sync a single feed and record its status. Returns event count, or null if
+// the feed doc is missing (raced with disconnect).
+async function syncOneFeed(feedId: string): Promise<number | null> {
+  const feed = await readFeed(feedId);
+  if (!feed) return null;
+  const text = await fetchIcs(feed.icsUrl);
+  const parsed = eventsFromIcs(text);
+  const count = await applyPull(feedId, feed.defaultCat, parsed);
+  await STATUS().set({
+    feeds: { [feedId]: {
+      label: feed.label ?? null,
+      lastSyncAt: FieldValue.serverTimestamp(),
+      lastSyncCount: count,
+    } },
+  }, { merge: true });
+  return count;
+}
+
+// ─── Apply a parsed feed: upsert + delete-missing, scoped to one feed ────────
+async function applyPull(feedId: string, defaultCat: string | undefined, parsed: ParsedEvent[]): Promise<number> {
+  // Per-feed snapshot — must filter by gcalFeedId so syncing feed B does not
+  // delete feed A's events.
+  const existingSnap = await db.collection('events').where('gcalFeedId', '==', feedId).get();
+  const existing: ExistingDoc[] = [];
+  existingSnap.forEach((d) => {
     const uid = d.data().gcalUid as string | undefined;
-    if (uid) existingByUid.set(uid, d.id);
+    if (uid) existing.push({ id: d.id, uid });
   });
 
-  const seen = new Set<string>();
+  const plan = planFeedSync(feedId, existing, parsed);
+  const byUid = new Map(plan.upserts.map((u) => [u.uid, u.id]));
+
   let batch = db.batch();
   let ops = 0;
   const commit = async () => { if (ops > 0) { await batch.commit(); batch = db.batch(); ops = 0; } };
 
   for (const ev of parsed) {
-    seen.add(ev.uid);
-    const id = existingByUid.get(ev.uid) ?? docIdFromUid(ev.uid);
-    batch.set(db.collection('events').doc(id), serialize(ev), { merge: true });
+    const id = byUid.get(ev.uid)!;
+    batch.set(db.collection('events').doc(id), serialize(feedId, defaultCat, ev), { merge: true });
     if (++ops >= 400) await commit();
   }
-
-  for (const [uid, id] of existingByUid) {
-    if (!seen.has(uid)) {
-      batch.delete(db.collection('events').doc(id));
-      if (++ops >= 400) await commit();
-    }
+  for (const id of plan.deletes) {
+    batch.delete(db.collection('events').doc(id));
+    if (++ops >= 400) await commit();
   }
-
   await commit();
   return parsed.length;
 }
 
-function serialize(ev: ParsedEvent): Record<string, unknown> {
+function serialize(feedId: string, defaultCat: string | undefined, ev: ParsedEvent): Record<string, unknown> {
   // Using `null` (not undefined) so set({merge:true}) deletes fields that
   // disappeared upstream (Firestore treats null as an explicit clear).
   const rrule = ev.rrule
@@ -171,7 +227,7 @@ function serialize(ev: ParsedEvent): Record<string, unknown> {
     : null;
   return {
     title: ev.title,
-    cat: ev.cat,
+    cat: defaultCat || ev.cat,
     start: Timestamp.fromDate(ev.start),
     dur: ev.dur ?? null,
     allDay: ev.allDay,
@@ -180,6 +236,7 @@ function serialize(ev: ParsedEvent): Record<string, unknown> {
     notes: ev.notes ?? '',
     rrule,
     gcalUid: ev.uid,
+    gcalFeedId: feedId,
     syncOrigin: 'gcal',
     syncedAt: FieldValue.serverTimestamp(),
   };

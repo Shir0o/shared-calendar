@@ -6,8 +6,8 @@ import {
   callGcalConnect,
   callGcalDisconnect,
   callGcalSyncNow,
-  subscribeGcalConfig,
-  type GcalConfig,
+  subscribeGcalFeeds,
+  type GcalFeedStatus,
 } from '../lib/gcal';
 import { Btn, Icon } from '../components/ui';
 
@@ -23,22 +23,22 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
   useEffect(() => subscribeAdmins(setAdmins), []);
 
   // ── Google Calendar (ICS-URL) connection state ───────────────────────────
-  const [gcal, setGcal] = useState<GcalConfig | null>(null);
+  // The data model is multi-feed but this UI still surfaces only the first
+  // feed; a follow-up will turn this into a list.
+  const [feeds, setFeeds] = useState<GcalFeedStatus[]>([]);
   const [icsUrl, setIcsUrl] = useState('');
   const [gcalBusy, setGcalBusy] = useState<'idle' | 'connecting' | 'syncing' | 'disconnecting'>('idle');
   const [gcalError, setGcalError] = useState('');
 
-  useEffect(() => subscribeGcalConfig(setGcal), []);
+  useEffect(() => subscribeGcalFeeds(setFeeds), []);
+  const gcal = feeds[0] ?? null;
 
   const connectGcal = async () => {
     setGcalError('');
     setGcalBusy('connecting');
     try {
-      const res = await callGcalConnect(icsUrl.trim());
+      await callGcalConnect({ icsUrl: icsUrl.trim() });
       setIcsUrl('');
-      if (res.ok && typeof res.count === 'number') {
-        // Optimistic UI lives in the subscription; nothing else to do.
-      }
     } catch (e) {
       setGcalError((e as Error).message || 'Could not connect.');
     } finally {
@@ -47,10 +47,11 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
   };
 
   const syncGcal = async () => {
+    if (!gcal) return;
     setGcalError('');
     setGcalBusy('syncing');
     try {
-      await callGcalSyncNow();
+      await callGcalSyncNow(gcal.feedId);
     } catch (e) {
       setGcalError((e as Error).message || 'Sync failed.');
     } finally {
@@ -59,10 +60,11 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
   };
 
   const disconnectGcal = async () => {
+    if (!gcal) return;
     setGcalError('');
     setGcalBusy('disconnecting');
     try {
-      await callGcalDisconnect();
+      await callGcalDisconnect(gcal.feedId);
     } catch (e) {
       setGcalError((e as Error).message || 'Disconnect failed.');
     } finally {
@@ -122,7 +124,7 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
 
           <div className="modal-row">
             <label className="modal-label">Google Calendar sync</label>
-            {gcal?.connected ? (
+            {gcal ? (
               <div className="gcal-connected">
                 <div className="gcal-status">
                   <span className="gcal-pill mono">
