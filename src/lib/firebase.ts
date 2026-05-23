@@ -24,5 +24,7 @@ export const googleProvider = new GoogleAuthProvider();
 // Firebase (no Cloud Functions needed). Members get view + create.
 export const MEMBER_EMAIL = (import.meta.env.VITE_MEMBER_EMAIL as string) || 'members@cisa-cal.web.app';
 
-// Hardcoded owner — full control + admin management.
-export const OWNER_EMAIL = 'yilongwang05@gmail.com';
+// Owner email — single source of truth lives in shared/owner.ts. Re-exported
+// here so existing imports (src/lib/auth.tsx, src/views/AccessPanel.tsx) don't
+// need to change.
+export { OWNER_EMAIL } from '../../shared/owner';

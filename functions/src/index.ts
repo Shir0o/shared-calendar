@@ -27,7 +27,11 @@ import { planFeedSync, type ExistingDoc } from './sync.js';
 initializeApp();
 const db = getFirestore();
 
-// Keep in sync with src/lib/firebase.ts + firestore.rules.
+// Source of truth: shared/owner.ts. Cloud Functions deploys only this
+// directory so we can't import across the workspace at runtime — the literal
+// is duplicated here and a drift-guard test (src/lib/owner.test.ts) keeps
+// these three sites (here, src/lib/firebase.ts via shared/, firestore.rules)
+// from disagreeing.
 const OWNER_EMAIL = 'yilongwang05@gmail.com';
 
 const STATUS = () => db.collection('config').doc('gcal');
@@ -109,16 +113,16 @@ export const gcalConnect = onCall(async (req) => {
     connectedBy: callerEmail(req),
   });
 
-  const count = await applyPull(feedId, defaultCat, parsed);
+  const result = await applyPull(feedId, defaultCat, parsed);
   await STATUS().set({
     feeds: { [feedId]: {
       label: label || null,
       defaultCat: defaultCat || null,
       lastSyncAt: FieldValue.serverTimestamp(),
-      lastSyncCount: count,
+      lastSyncCount: result.total,
     } },
   }, { merge: true });
-  return { ok: true, feedId, count };
+  return { ok: true, feedId, count: result.total };
 });
 
 export const gcalRename = onCall(async (req) => {
@@ -158,11 +162,17 @@ export const gcalSyncNow = onCall(async (req) => {
   const ids = feedId ? [feedId] : await listFeedIds();
   if (ids.length === 0) throw new HttpsError('failed-precondition', 'No Google Calendar feeds are connected.');
   let total = 0;
+  let written = 0;
+  let skipped = 0;
   for (const id of ids) {
-    const count = await syncOneFeed(id);
-    if (count !== null) total += count;
+    const res = await syncOneFeed(id);
+    if (res !== null) {
+      total += res.total;
+      written += res.written;
+      skipped += res.skipped;
+    }
   }
-  return { ok: true, count: total };
+  return { ok: true, count: total, written, skipped };
 });
 
 // ─── Scheduled auto-pull ─────────────────────────────────────────────────────
@@ -176,53 +186,74 @@ export const gcalPoll = onSchedule('every 30 minutes', async () => {
   results.forEach((r, i) => {
     const id = ids[i];
     if (r.status === 'fulfilled') {
-      logger.info(`gcalPoll feed=${id} synced ${r.value ?? 0} events`);
+      const v = r.value;
+      if (v === null) {
+        logger.info(`gcalPoll feed=${id} disappeared mid-sync`);
+      } else {
+        logger.info(
+          `gcalPoll feed=${id} total=${v.total} written=${v.written} skipped=${v.skipped} deleted=${v.deleted}`,
+        );
+      }
     } else {
       logger.error(`gcalPoll feed=${id} failed`, r.reason);
     }
   });
 });
 
-// Sync a single feed and record its status. Returns event count, or null if
+interface SyncResult { total: number; written: number; skipped: number; deleted: number }
+
+// Sync a single feed and record its status. Returns a SyncResult, or null if
 // the feed doc is missing (raced with disconnect).
-async function syncOneFeed(feedId: string): Promise<number | null> {
+async function syncOneFeed(feedId: string): Promise<SyncResult | null> {
   const feed = await readFeed(feedId);
   if (!feed) return null;
   const text = await fetchIcs(feed.icsUrl);
   const parsed = eventsFromIcs(text);
-  const count = await applyPull(feedId, feed.defaultCat, parsed);
+  const result = await applyPull(feedId, feed.defaultCat, parsed);
   await STATUS().set({
     feeds: { [feedId]: {
       label: feed.label ?? null,
       defaultCat: feed.defaultCat ?? null,
       lastSyncAt: FieldValue.serverTimestamp(),
-      lastSyncCount: count,
+      lastSyncCount: result.total,
     } },
   }, { merge: true });
-  return count;
+  return result;
 }
 
 // ─── Apply a parsed feed: upsert + delete-missing, scoped to one feed ────────
-async function applyPull(feedId: string, defaultCat: string | undefined, parsed: ParsedEvent[]): Promise<number> {
+async function applyPull(
+  feedId: string,
+  defaultCat: string | undefined,
+  parsed: ParsedEvent[],
+): Promise<SyncResult> {
   // Per-feed snapshot — must filter by gcalFeedId so syncing feed B does not
-  // delete feed A's events.
-  const existingSnap = await db.collection('events').where('gcalFeedId', '==', feedId).get();
+  // delete feed A's events. Project to only the fields we need so a feed with
+  // long notes/loc doesn't balloon memory on the function instance.
+  const existingSnap = await db
+    .collection('events')
+    .where('gcalFeedId', '==', feedId)
+    .select('gcalUid', 'lastModified')
+    .get();
   const existing: ExistingDoc[] = [];
   existingSnap.forEach((d) => {
     const uid = d.data().gcalUid as string | undefined;
-    if (uid) existing.push({ id: d.id, uid });
+    if (!uid) return;
+    const lmTs = d.data().lastModified as Timestamp | undefined;
+    existing.push({ id: d.id, uid, lastModified: lmTs?.toDate() });
   });
 
   const plan = planFeedSync(feedId, existing, parsed);
-  const byUid = new Map(plan.upserts.map((u) => [u.uid, u.id]));
+  const parsedByUid = new Map(parsed.map((e) => [e.uid, e]));
 
   let batch = db.batch();
   let ops = 0;
   const commit = async () => { if (ops > 0) { await batch.commit(); batch = db.batch(); ops = 0; } };
 
-  for (const ev of parsed) {
-    const id = byUid.get(ev.uid)!;
-    batch.set(db.collection('events').doc(id), serialize(feedId, defaultCat, ev), { merge: true });
+  // Only iterate the planned upserts — unchanged events are skipped entirely.
+  for (const u of plan.upserts) {
+    const ev = parsedByUid.get(u.uid)!;
+    batch.set(db.collection('events').doc(u.id), serialize(feedId, defaultCat, ev), { merge: true });
     if (++ops >= 400) await commit();
   }
   for (const id of plan.deletes) {
@@ -230,7 +261,12 @@ async function applyPull(feedId: string, defaultCat: string | undefined, parsed:
     if (++ops >= 400) await commit();
   }
   await commit();
-  return parsed.length;
+  return {
+    total: parsed.length,
+    written: plan.upserts.length,
+    skipped: plan.skipped,
+    deleted: plan.deletes.length,
+  };
 }
 
 function serialize(feedId: string, defaultCat: string | undefined, ev: ParsedEvent): Record<string, unknown> {
@@ -257,6 +293,9 @@ function serialize(feedId: string, defaultCat: string | undefined, ev: ParsedEve
     rrule,
     gcalUid: ev.uid,
     gcalFeedId: feedId,
+    // Persisted so the next pull can skip the write when LAST-MODIFIED is
+    // unchanged. null clears any stale value when the feed stops providing it.
+    lastModified: ev.lastModified ? Timestamp.fromDate(ev.lastModified) : null,
     syncOrigin: 'gcal',
     syncedAt: FieldValue.serverTimestamp(),
   };

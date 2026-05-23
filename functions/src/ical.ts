@@ -24,10 +24,15 @@ export interface ParsedEvent {
   loc?: string;
   notes?: string;
   rrule?: ParsedRRule;
+  // ICS LAST-MODIFIED — when both this and the previously-persisted value
+  // are present and equal, the planner skips the Firestore write. Undefined
+  // when the feed doesn't include the property (e.g. some hand-rolled feeds).
+  lastModified?: Date;
 }
 
 const SUPPORTED_FREQ: Record<string, Freq> = { DAILY: 'daily', WEEKLY: 'weekly', MONTHLY: 'monthly' };
 type Recur = InstanceType<typeof ICAL.Recur>;
+type IcalTime = InstanceType<typeof ICAL.Time>;
 
 function mapRRule(recur: Recur): ParsedRRule | undefined {
   const freq = SUPPORTED_FREQ[recur.freq];
@@ -72,6 +77,9 @@ export function eventsFromIcs(text: string): ParsedEvent[] {
       if (recur) rrule = mapRRule(recur);
     }
 
+    const lmRaw = ve.getFirstPropertyValue('last-modified') as IcalTime | null;
+    const lastModified = lmRaw ? lmRaw.toJSDate() : undefined;
+
     out.push({
       uid,
       title: (ev.summary || 'Untitled event').trim(),
@@ -83,6 +91,7 @@ export function eventsFromIcs(text: string): ParsedEvent[] {
       loc: (ev.location || '').trim() || undefined,
       notes: (ev.description || '').trim() || undefined,
       rrule,
+      lastModified,
     });
   }
   return out;
