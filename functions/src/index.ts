@@ -23,6 +23,11 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { logger } from 'firebase-functions';
 import { eventsFromIcs, type ParsedEvent } from './ical.js';
 import { planFeedSync, type ExistingDoc } from './sync.js';
+import {
+  GcalConnectResponse,
+  GcalDisconnectResponse,
+  GcalSyncNowResponse,
+} from './schemas.js';
 
 initializeApp();
 const db = getFirestore();
@@ -121,7 +126,7 @@ export const gcalConnect = onCall(async (req) => {
       lastSyncCount: result.total,
     } },
   }, { merge: true });
-  return { ok: true, feedId, count: result.total };
+  return GcalConnectResponse.parse({ ok: true, feedId, count: result.total });
 });
 
 export const gcalDisconnect = onCall(async (req) => {
@@ -134,7 +139,7 @@ export const gcalDisconnect = onCall(async (req) => {
   // or via a future "clear synced events" action.
   await FEED(feedId).delete();
   await STATUS().set({ feeds: { [feedId]: FieldValue.delete() } }, { merge: true });
-  return { ok: true };
+  return GcalDisconnectResponse.parse({ ok: true });
 });
 
 export const gcalSyncNow = onCall(async (req) => {
@@ -153,7 +158,7 @@ export const gcalSyncNow = onCall(async (req) => {
       skipped += res.skipped;
     }
   }
-  return { ok: true, count: total, written, skipped };
+  return GcalSyncNowResponse.parse({ ok: true, count: total, written, skipped });
 });
 
 // ─── Scheduled auto-pull ─────────────────────────────────────────────────────
