@@ -114,6 +114,21 @@ describe('parseDelimited', () => {
     const c = parseDelimited('Title,Date\n,2026-06-03');
     expect(c[0].errors.length).toBeGreaterThan(0);
   });
+
+  it('respects quoted commas inside fields', () => {
+    const csv = 'Title,Date,Start,End,Category,Location\n"Meeting, with boss",2026-06-03,2:00 PM,60,meeting,"Galileo, room 2"';
+    const c = parseDelimited(csv);
+    expect(c).toHaveLength(1);
+    expect(c[0].errors).toHaveLength(0);
+    expect(c[0].event.title).toBe('Meeting, with boss');
+    expect(c[0].event.loc).toBe('Galileo, room 2');
+  });
+
+  it('unescapes "" inside a quoted field', () => {
+    const csv = 'Title,Date\n"She said ""hi""",2026-06-03';
+    const c = parseDelimited(csv);
+    expect(c[0].event.title).toBe('She said "hi"');
+  });
 });
 
 describe('matchCategory', () => {

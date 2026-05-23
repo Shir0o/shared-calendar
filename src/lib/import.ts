@@ -126,8 +126,30 @@ interface Row {
   notes?: string;
 }
 
+// Split a delimited line, honoring double-quoted fields so commas/tabs inside
+// quotes don't split (e.g. `"Meeting, with boss",2026-06-03,…`). Escaped
+// quotes inside a quoted field follow CSV convention: `""` → `"`.
 function splitLine(line: string, delim: string): string[] {
-  return line.split(delim).map((c) => c.trim().replace(/^"(.*)"$/, '$1'));
+  const out: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') inQuotes = false;
+      else cur += ch;
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === delim) {
+      out.push(cur.trim());
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur.trim());
+  return out;
 }
 
 // Lenient date parse: ISO (YYYY-MM-DD), US (M/D/YYYY or M/D/YY), or anything

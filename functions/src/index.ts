@@ -42,15 +42,28 @@ async function isAdminOrOwner(req: CallableRequest): Promise<boolean> {
   const email = callerEmail(req);
   if (!email) return false;
   if (email === OWNER_EMAIL.toLowerCase()) return true;
-  const key = email.replace(/[^a-z0-9]+/g, '_');
-  const snap = await db.collection('admins').doc(key).get();
+  // Doc ID is the raw lowercase email — matches src/lib/auth.tsx emailKey()
+  // and firestore.rules `emailKey()`. Keep these three in sync.
+  const snap = await db.collection('admins').doc(email).get();
   return snap.exists && snap.data()?.approved === true;
 }
 
 async function fetchIcs(url: string): Promise<string> {
-  const res = await fetch(url, { redirect: 'follow' });
-  if (!res.ok) throw new HttpsError('failed-precondition', `Couldn't fetch calendar (HTTP ${res.status}).`);
-  return await res.text();
+  // 10-second budget so a slow/unresponsive feed can't pin the function.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(url, { redirect: 'follow', signal: controller.signal });
+    if (!res.ok) throw new HttpsError('failed-precondition', `Couldn't fetch calendar (HTTP ${res.status}).`);
+    return await res.text();
+  } catch (e) {
+    if ((e as { name?: string }).name === 'AbortError') {
+      throw new HttpsError('deadline-exceeded', 'Calendar feed timed out (10s).');
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // ─── Callables ───────────────────────────────────────────────────────────────
