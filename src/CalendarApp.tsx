@@ -20,6 +20,7 @@ import { TimelineView } from './views/TimelineView';
 import { YearView } from './views/YearView';
 import { EventDetails } from './components/EventDetails';
 import { EventEditor, type EditorInitial } from './components/EventEditor';
+import { BulkImport } from './components/BulkImport';
 import { MorePopover } from './components/MorePopover';
 import { HoverPreview } from './components/HoverPreview';
 import { TweaksPanel, useTweaks } from './components/TweaksPanel';
@@ -50,6 +51,7 @@ export const CalendarApp = () => {
   const [query, setQuery] = useState('');
   const [catFilter, setCatFilter] = useState<CategoryId[]>([]);
   const [accessOpen, setAccessOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Realtime subscription to the shared event collection.
   useEffect(() => subscribeEvents(setEvents, (e) => console.error('events subscription error', e)), []);
@@ -158,6 +160,7 @@ export const CalendarApp = () => {
         setEditingEvent(null);
         setMorePayload(null);
         setAccessOpen(false);
+        setImportOpen(false);
       }
       if (!e.metaKey && !e.ctrlKey && !e.altKey) {
         if (e.key === '1') setView('month');
@@ -214,6 +217,7 @@ export const CalendarApp = () => {
         role={role!}
         canCreate={canCreate}
         onCreate={() => createAt(cursor)}
+        onOpenImport={() => setImportOpen(true)}
         onPickEvent={onPickEvent}
         onOpenAccess={() => setAccessOpen(true)}
         onSignOut={signOutUser}
@@ -296,6 +300,8 @@ export const CalendarApp = () => {
       <HoverPreview hover={hoverEvent} />
 
       {accessOpen && role === 'owner' && <AccessPanel onClose={() => setAccessOpen(false)} />}
+
+      {importOpen && canCreate && <BulkImport existing={expanded} onClose={() => setImportOpen(false)} />}
 
       <TweaksPanel tweaks={t} setTweak={setTweak} accents={ACCENT_KEYS} />
     </div>

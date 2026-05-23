@@ -2,6 +2,13 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { OWNER_EMAIL } from '../lib/firebase';
 import { addAdmin, revokeAdmin, subscribeAdmins, type AdminRecord } from '../lib/admin';
+import {
+  callGcalConnect,
+  callGcalDisconnect,
+  callGcalSyncNow,
+  subscribeGcalConfig,
+  type GcalConfig,
+} from '../lib/gcal';
 import { Btn, Icon } from '../components/ui';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -14,6 +21,54 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => subscribeAdmins(setAdmins), []);
+
+  // ── Google Calendar (ICS-URL) connection state ───────────────────────────
+  const [gcal, setGcal] = useState<GcalConfig | null>(null);
+  const [icsUrl, setIcsUrl] = useState('');
+  const [gcalBusy, setGcalBusy] = useState<'idle' | 'connecting' | 'syncing' | 'disconnecting'>('idle');
+  const [gcalError, setGcalError] = useState('');
+
+  useEffect(() => subscribeGcalConfig(setGcal), []);
+
+  const connectGcal = async () => {
+    setGcalError('');
+    setGcalBusy('connecting');
+    try {
+      const res = await callGcalConnect(icsUrl.trim());
+      setIcsUrl('');
+      if (res.ok && typeof res.count === 'number') {
+        // Optimistic UI lives in the subscription; nothing else to do.
+      }
+    } catch (e) {
+      setGcalError((e as Error).message || 'Could not connect.');
+    } finally {
+      setGcalBusy('idle');
+    }
+  };
+
+  const syncGcal = async () => {
+    setGcalError('');
+    setGcalBusy('syncing');
+    try {
+      await callGcalSyncNow();
+    } catch (e) {
+      setGcalError((e as Error).message || 'Sync failed.');
+    } finally {
+      setGcalBusy('idle');
+    }
+  };
+
+  const disconnectGcal = async () => {
+    setGcalError('');
+    setGcalBusy('disconnecting');
+    try {
+      await callGcalDisconnect();
+    } catch (e) {
+      setGcalError((e as Error).message || 'Disconnect failed.');
+    } finally {
+      setGcalBusy('idle');
+    }
+  };
 
   const me = user?.email || '';
 
@@ -63,6 +118,54 @@ export const AccessPanel = ({ onClose }: { onClose: () => void }) => {
               </Btn>
             </form>
             {error && <div className="access-empty mono">{error}</div>}
+          </div>
+
+          <div className="modal-row">
+            <label className="modal-label">Google Calendar sync</label>
+            {gcal?.connected ? (
+              <div className="gcal-connected">
+                <div className="gcal-status">
+                  <span className="gcal-pill mono">
+                    <Icon name="check" size={10} /> CONNECTED
+                  </span>
+                  {gcal.lastSyncAt && (
+                    <span className="gcal-meta mono">
+                      last sync {gcal.lastSyncAt.toLocaleString()} · {gcal.lastSyncCount ?? 0} events
+                    </span>
+                  )}
+                </div>
+                <div className="gcal-actions">
+                  <Btn variant="primary" leading="repeat" onClick={syncGcal} disabled={gcalBusy !== 'idle'}>
+                    {gcalBusy === 'syncing' ? 'Syncing…' : 'Sync now'}
+                  </Btn>
+                  <Btn variant="ghost" danger leading="trash" onClick={disconnectGcal} disabled={gcalBusy !== 'idle'}>
+                    Disconnect
+                  </Btn>
+                </div>
+                <div className="access-empty mono gcal-hint">
+                  The calendar URL is stored server-side and never returned to the browser.
+                  To rotate it: in Google Calendar settings, reset the secret address, then disconnect and reconnect here.
+                </div>
+              </div>
+            ) : (
+              <div className="gcal-connect">
+                <input
+                  type="url"
+                  className="modal-input mono"
+                  placeholder="https://calendar.google.com/calendar/ical/…/basic.ics"
+                  value={icsUrl}
+                  onChange={(e) => setIcsUrl(e.target.value)}
+                />
+                <Btn variant="primary" leading="check" onClick={connectGcal} disabled={gcalBusy !== 'idle' || !icsUrl.trim()}>
+                  {gcalBusy === 'connecting' ? 'Connecting…' : 'Connect'}
+                </Btn>
+                <div className="access-empty mono gcal-hint">
+                  Paste the “secret address in iCal format” from your Google Calendar settings.
+                  Pulls every 30 minutes; one-way (GCal → app).
+                </div>
+              </div>
+            )}
+            {gcalError && <div className="access-empty mono">{gcalError}</div>}
           </div>
 
           <div className="modal-row">
