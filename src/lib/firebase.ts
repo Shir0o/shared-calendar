@@ -3,6 +3,10 @@
 // all backend (Auth + Firestore) is Firebase.
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+// Re-exported so AI-agent preview scripts can sign in via a single stable
+// import path (see CLAUDE.md "Log in (admin)") instead of reaching into
+// Vite's internal /node_modules/.vite/deps cache.
+export { signInWithEmailAndPassword } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
