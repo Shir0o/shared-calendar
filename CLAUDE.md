@@ -76,12 +76,12 @@ The app needs Firebase config and is gated behind a login screen. To get a usabl
 4. **Log in (admin) — for verifying admin-only features:** the Gate UI doesn't expose an admin password field; the visible admin button uses Google OAuth, which a headless preview browser can't complete. Use `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.claude/settings.local.json` and sign in directly via `preview_eval` after the Gate has loaded:
 
    ```js
-   // Bare specifiers don't resolve in the browser — import via the vite-served paths instead.
+   // Bare specifiers don't resolve in the browser — import via the app's own module.
+   // src/lib/firebase.ts re-exports signInWithEmailAndPassword for this purpose.
    const fb = await import('/src/lib/firebase.ts');
-   const authMod = await import('/node_modules/.vite/deps/firebase_auth.js');
-   await authMod.signInWithEmailAndPassword(fb.auth, '<ADMIN_EMAIL>', '<ADMIN_PASSWORD>');
+   await fb.signInWithEmailAndPassword(fb.auth, '<ADMIN_EMAIL>', '<ADMIN_PASSWORD>');
    ```
 
    The user has authorized using these stored admin credentials for local preview verification. Prefer the member path (step 3) when admin role isn't needed — admin sign-in mutates app state more broadly (drag-to-reschedule, edit/delete, AccessPanel, category editing).
 
-   If sign-in fails with `auth/user-not-found`, or sign-in succeeds but `role` resolves to `denied`, the one-time owner setup hasn't been done (Firebase Auth user for `ADMIN_EMAIL` + a doc at `/admins/{ADMIN_EMAIL}` with `approved: true`). Surface this to the user rather than retrying — only the owner can fix it (via the in-app Access panel signed in as owner, or via the Firestore REST API with a service-account token).
+   If sign-in fails with `auth/user-not-found`, or sign-in succeeds but `role` resolves to `denied`, the one-time owner setup hasn't been done (Firebase Auth user for `<ADMIN_EMAIL>` + a doc at `/admins/<ADMIN_EMAIL>` with `approved: true`). Surface this to the user rather than retrying — only the owner can fix it (via the in-app Access panel signed in as owner, or via the Firestore REST API with a service-account token).
