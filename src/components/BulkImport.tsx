@@ -9,12 +9,14 @@ import {
   type CategoryId,
 } from '../lib/calendar';
 import { parseDelimited, parseICS, type ImportCandidate } from '../lib/import';
-import { saveEventsBatch } from '../lib/events';
+import { removeEventsBatch, saveEventsBatch } from '../lib/events';
+import { pushUndo } from '../lib/undo';
 import { Btn, CatDot, Icon } from './ui';
 
 interface BulkImportProps {
   existing: CalendarEvent[]; // expanded events, for the conflict heads-up
   onClose: () => void;
+  canUndo?: boolean;
 }
 
 const PASTE_HINT =
@@ -25,7 +27,7 @@ function whenLabel(ev: CalendarEvent): string {
   return `${fmtDate(ev.start)} · ${fmtTime(ev.start)}`;
 }
 
-export const BulkImport = ({ existing, onClose }: BulkImportProps) => {
+export const BulkImport = ({ existing, onClose, canUndo = false }: BulkImportProps) => {
   const [tab, setTab] = useState<'file' | 'paste'>('file');
   const [text, setText] = useState('');
   const [candidates, setCandidates] = useState<ImportCandidate[] | null>(null);
@@ -82,7 +84,15 @@ export const BulkImport = ({ existing, onClose }: BulkImportProps) => {
     if (!importable.length) return;
     setSaving(true);
     try {
-      await saveEventsBatch(importable.map((c) => c.event));
+      const importedEvents = importable.map((c) => c.event);
+      await saveEventsBatch(importedEvents);
+      if (canUndo) {
+        const ids = importedEvents.map((e) => e.id);
+        pushUndo({
+          label: `Imported ${ids.length} event${ids.length === 1 ? '' : 's'}`,
+          apply: () => removeEventsBatch(ids),
+        });
+      }
       onClose();
     } catch (e) {
       setParseError(`Import failed: ${(e as Error).message}`);

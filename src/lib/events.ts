@@ -116,3 +116,15 @@ export async function saveEventsBatch(events: CalendarEvent[]): Promise<void> {
 export async function removeEvent(id: string): Promise<void> {
   await deleteDoc(doc(db, COLL, id));
 }
+
+// Bulk-delete by id. Chunked at 500 to respect the Firestore batch cap.
+export async function removeEventsBatch(ids: string[]): Promise<void> {
+  const CHUNK = 500;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    for (const id of ids.slice(i, i + CHUNK)) {
+      batch.delete(doc(db, COLL, id));
+    }
+    await batch.commit();
+  }
+}

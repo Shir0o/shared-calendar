@@ -3,6 +3,7 @@ import {
   addDays,
   conflictMap,
   expandEvents,
+  fmtDate,
   startOfDay,
   eventSpanDays,
   type CalendarEvent,
@@ -10,6 +11,8 @@ import {
 } from './lib/calendar';
 import { useAuth, canEdit as roleCanEdit } from './lib/auth';
 import { removeEvent, saveEvent, saveEventsBatch, subscribeEvents } from './lib/events';
+import { popAndApply, pushUndo } from './lib/undo';
+import { UndoToast } from './components/UndoToast';
 import { subscribeCategoryOverrides, useCategoryVersion } from './lib/categories';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
@@ -99,7 +102,12 @@ export const CalendarApp = () => {
       ns.setHours(e.start.getHours(), e.start.getMinutes(), 0, 0);
       next = { ...e, start: ns };
     }
+    const prev = e;
     void saveEvent(next);
+    pushUndo({
+      label: `Moved "${e.title}" to ${fmtDate(next.start)}`,
+      apply: () => saveEvent(prev),
+    });
   };
 
   const handleSave = (ev: CalendarEvent) => {
@@ -116,7 +124,18 @@ export const CalendarApp = () => {
       if (series && series.rrule) {
         const exdates = [...(series.rrule.exdates || []), ev.__instanceDate];
         const updatedSeries: CalendarEvent = { ...series, rrule: { ...series.rrule, exdates } };
+        const prevSeries = series;
+        const standaloneId = standalone.id;
         void saveEventsBatch([updatedSeries, standalone]);
+        if (canEdit) {
+          pushUndo({
+            label: `Edited instance of "${ev.title}"`,
+            apply: async () => {
+              await saveEventsBatch([prevSeries]);
+              await removeEvent(standaloneId);
+            },
+          });
+        }
       } else {
         void saveEvent(standalone);
       }
@@ -128,7 +147,21 @@ export const CalendarApp = () => {
     const persisted: CalendarEvent = { ...ev, id: targetId };
     delete persisted.__seriesId;
     delete persisted.__instanceDate;
+    const prev = events.find((x) => x.id === targetId) ?? null;
     void saveEvent(persisted);
+    if (canEdit) {
+      if (prev) {
+        pushUndo({
+          label: `Edited "${persisted.title}"`,
+          apply: () => saveEvent(prev),
+        });
+      } else {
+        pushUndo({
+          label: `Created "${persisted.title}"`,
+          apply: () => removeEvent(targetId),
+        });
+      }
+    }
     setEditingEvent(null);
     setPickedEvent(null);
   };
@@ -137,12 +170,24 @@ export const CalendarApp = () => {
     if (!canEdit) return;
     const seriesId = ev.__seriesId || (ev.id.includes('#') ? ev.id.split('#')[0] : ev.id);
     if (opts.series || !ev.__seriesId) {
+      const prev = events.find((x) => x.id === seriesId);
       void removeEvent(seriesId);
+      if (prev) {
+        pushUndo({
+          label: `Deleted "${prev.title}"`,
+          apply: () => saveEvent(prev),
+        });
+      }
     } else {
       const series = events.find((x) => x.id === seriesId);
       if (series && series.rrule) {
         const exdates = [...(series.rrule.exdates || []), ev.__instanceDate!];
+        const prevSeries = series;
         void saveEvent({ ...series, rrule: { ...series.rrule, exdates } });
+        pushUndo({
+          label: `Skipped instance of "${series.title}"`,
+          apply: () => saveEvent(prevSeries),
+        });
       }
     }
     setEditingEvent(null);
@@ -200,6 +245,12 @@ export const CalendarApp = () => {
         if (e.key === '3') setView('agenda');
         if (e.key === '4') setView('year');
       }
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+        if (canEdit) {
+          e.preventDefault();
+          void popAndApply();
+        }
+      }
       if (e.key === 'ArrowLeft' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         const c = new Date(cursor);
@@ -216,7 +267,7 @@ export const CalendarApp = () => {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cursor, canCreate]);
+  }, [cursor, canCreate, canEdit]);
 
   const accent = ACCENTS[t.accent] || ACCENTS['#4f4cdb'];
   const themeClass = 'theme-' + (t.theme === 'dark' ? 'dark' : 'light');
@@ -333,9 +384,11 @@ export const CalendarApp = () => {
 
       {accessOpen && role === 'owner' && <AccessPanel onClose={() => setAccessOpen(false)} />}
 
-      {importOpen && canCreate && <BulkImport existing={expanded} onClose={() => setImportOpen(false)} />}
+      {importOpen && canCreate && <BulkImport existing={expanded} onClose={() => setImportOpen(false)} canUndo={canEdit} />}
 
       <TweaksPanel tweaks={t} setTweak={setTweak} accents={ACCENT_KEYS} />
+
+      {canEdit && <UndoToast />}
     </div>
   );
 };
