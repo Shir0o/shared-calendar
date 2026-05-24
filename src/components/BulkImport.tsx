@@ -9,7 +9,7 @@ import {
   type CategoryId,
 } from '../lib/calendar';
 import { parseDelimited, parseICS, type ImportCandidate } from '../lib/import';
-import { removeEvent, saveEventsBatch } from '../lib/events';
+import { removeEventsBatch, saveEventsBatch } from '../lib/events';
 import { pushUndo } from '../lib/undo';
 import { Btn, CatDot, Icon } from './ui';
 
@@ -90,9 +90,7 @@ export const BulkImport = ({ existing, onClose, canUndo = false }: BulkImportPro
         const ids = importedEvents.map((e) => e.id);
         pushUndo({
           label: `Imported ${ids.length} event${ids.length === 1 ? '' : 's'}`,
-          apply: async () => {
-            await Promise.all(ids.map((id) => removeEvent(id)));
-          },
+          apply: () => removeEventsBatch(ids),
         });
       }
       onClose();
