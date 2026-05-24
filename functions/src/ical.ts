@@ -3,7 +3,7 @@
 // serialize with admin SDK Timestamps.
 import ICAL from 'ical.js';
 
-export type Freq = 'daily' | 'weekly' | 'monthly';
+export type Freq = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface ParsedRRule {
   freq: Freq;
@@ -30,7 +30,7 @@ export interface ParsedEvent {
   lastModified?: Date;
 }
 
-const SUPPORTED_FREQ: Record<string, Freq> = { DAILY: 'daily', WEEKLY: 'weekly', MONTHLY: 'monthly' };
+const SUPPORTED_FREQ: Record<string, Freq> = { DAILY: 'daily', WEEKLY: 'weekly', MONTHLY: 'monthly', YEARLY: 'yearly' };
 type Recur = InstanceType<typeof ICAL.Recur>;
 type IcalTime = InstanceType<typeof ICAL.Time>;
 

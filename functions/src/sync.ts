@@ -8,6 +8,11 @@ export interface ExistingDoc {
   // Previously-persisted ICS LAST-MODIFIED, if we have one. Used by the
   // planner to skip Firestore writes when the upstream event is unchanged.
   lastModified?: Date;
+  // Whether the persisted doc currently has an rrule. Tracked so that when
+  // the parser starts recognizing a frequency it previously dropped (e.g.
+  // YEARLY support landing later), the next sync rewrites the doc even when
+  // LAST-MODIFIED hasn't moved.
+  hasRrule?: boolean;
 }
 
 export interface SyncPlan {
@@ -47,7 +52,8 @@ export function planFeedSync(
       prev &&
       prev.lastModified &&
       ev.lastModified &&
-      prev.lastModified.getTime() === ev.lastModified.getTime()
+      prev.lastModified.getTime() === ev.lastModified.getTime() &&
+      !!prev.hasRrule === !!ev.rrule
     ) {
       skipped++;
       continue;

@@ -23,7 +23,7 @@ export interface Category {
   ink: string;
 }
 
-export type Freq = 'daily' | 'weekly' | 'monthly';
+export type Freq = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface RRule {
   freq: Freq;
@@ -173,6 +173,37 @@ export function eventSpanDays(ev: CalendarEvent): number {
   return Math.max(1, Math.round((e.getTime() - s.getTime()) / MS_DAY));
 }
 
+// Parse a BYDAY code into ordinal + weekday. "1SU" → {ord:1, dow:0}, "-1FR" →
+// {ord:-1, dow:5}, "SU" → {ord:null, dow:0}. Returns null for unknown codes.
+// Cached: expandEvent calls this on every day in the walk window, so the
+// regex+lookup adds up across long ranges and large feeds.
+const BYDAY_PARSED: Record<string, { ord: number | null; dow: number } | null> = {};
+function parseByday(code: string): { ord: number | null; dow: number } | null {
+  if (code in BYDAY_PARSED) return BYDAY_PARSED[code];
+  const m = /^(-?\d+)?([A-Z]{2})$/.exec(code);
+  if (!m) return (BYDAY_PARSED[code] = null);
+  const dow = BYDAY_CODES.indexOf(m[2]);
+  if (dow < 0) return (BYDAY_PARSED[code] = null);
+  return (BYDAY_PARSED[code] = { ord: m[1] ? parseInt(m[1], 10) : null, dow });
+}
+
+// Does `cur` match a MONTHLY BYDAY code in its own month? Ord = null means
+// "every {weekday} of the month"; positive = Nth from start; negative = Nth
+// from end (-1 = last).
+function matchesMonthlyByday(cur: Date, code: string): boolean {
+  const p = parseByday(code);
+  if (!p) return false;
+  if (cur.getDay() !== p.dow) return false;
+  if (p.ord === null) return true;
+  const lastDay = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
+  if (p.ord > 0) {
+    const nth = Math.floor((cur.getDate() - 1) / 7) + 1;
+    return nth === p.ord;
+  }
+  const fromEnd = Math.floor((lastDay - cur.getDate()) / 7) + 1;
+  return fromEnd === -p.ord;
+}
+
 // ─── Recurrence expansion ───────────────────────────────────────────────────
 export function expandEvent(ev: CalendarEvent, rangeStart: Date, rangeEnd: Date): CalendarEvent[] {
   if (!ev.rrule) {
@@ -208,13 +239,26 @@ export function expandEvent(ev: CalendarEvent, rangeStart: Date, rangeEnd: Date)
         else include = cur.getDay() === seriesStart.getDay();
       }
     } else if (r.freq === 'monthly') {
-      // Clamp the target day-of-month to the last day of shorter months so an
-      // event on the 31st still lands on Feb 28/29, Apr 30, etc.
-      const lastDay = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
-      const targetDay = seriesStart.getDate();
-      if (cur.getDate() === Math.min(targetDay, lastDay)) {
-        const monthsFromStart = (cur.getFullYear() - seriesStart.getFullYear()) * 12 + (cur.getMonth() - seriesStart.getMonth());
-        include = monthsFromStart >= 0 && monthsFromStart % interval === 0;
+      const monthsFromStart = (cur.getFullYear() - seriesStart.getFullYear()) * 12 + (cur.getMonth() - seriesStart.getMonth());
+      const onInterval = monthsFromStart >= 0 && monthsFromStart % interval === 0;
+      if (onInterval) {
+        if (r.byday && r.byday.length) {
+          // MONTHLY+BYDAY (e.g. BYDAY=1SU "first Sunday", BYDAY=-1FR "last Friday").
+          include = r.byday.some((code) => matchesMonthlyByday(cur, code));
+        } else {
+          // Clamp the target day-of-month to the last day of shorter months so
+          // an event on the 31st still lands on Feb 28/29, Apr 30, etc.
+          const lastDay = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
+          const targetDay = seriesStart.getDate();
+          include = cur.getDate() === Math.min(targetDay, lastDay);
+        }
+      }
+    } else if (r.freq === 'yearly') {
+      const yearsFromStart = cur.getFullYear() - seriesStart.getFullYear();
+      if (yearsFromStart >= 0 && yearsFromStart % interval === 0 && cur.getMonth() === seriesStart.getMonth()) {
+        // Clamp Feb 29 to Feb 28 in non-leap years.
+        const lastDay = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
+        include = cur.getDate() === Math.min(seriesStart.getDate(), lastDay);
       }
     }
 
@@ -256,7 +300,20 @@ export function rruleSummary(rrule?: RRule): string {
     if (days) return i === 1 ? `Repeats weekly on ${days}` : `Repeats every ${i} weeks on ${days}`;
     return i === 1 ? 'Repeats weekly' : `Repeats every ${i} weeks`;
   }
-  if (rrule.freq === 'monthly') return i === 1 ? 'Repeats monthly' : `Repeats every ${i} months`;
+  if (rrule.freq === 'monthly') {
+    const labels = (rrule.byday || []).map((code) => {
+      const p = parseByday(code);
+      if (!p) return code;
+      const day = BYDAY_LABEL[BYDAY_CODES[p.dow]];
+      if (p.ord === null) return day;
+      if (p.ord === -1) return `last ${day}`;
+      const suf = p.ord >= 1 && p.ord <= 3 ? ['st', 'nd', 'rd'][p.ord - 1] : 'th';
+      return `${p.ord}${suf} ${day}`;
+    });
+    const suffix = labels.length ? ` on ${labels.join(', ')}` : '';
+    return i === 1 ? `Repeats monthly${suffix}` : `Repeats every ${i} months${suffix}`;
+  }
+  if (rrule.freq === 'yearly') return i === 1 ? 'Repeats yearly' : `Repeats every ${i} years`;
   return 'Repeats';
 }
 
