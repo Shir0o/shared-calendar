@@ -175,12 +175,16 @@ export function eventSpanDays(ev: CalendarEvent): number {
 
 // Parse a BYDAY code into ordinal + weekday. "1SU" → {ord:1, dow:0}, "-1FR" →
 // {ord:-1, dow:5}, "SU" → {ord:null, dow:0}. Returns null for unknown codes.
+// Cached: expandEvent calls this on every day in the walk window, so the
+// regex+lookup adds up across long ranges and large feeds.
+const BYDAY_PARSED: Record<string, { ord: number | null; dow: number } | null> = {};
 function parseByday(code: string): { ord: number | null; dow: number } | null {
+  if (code in BYDAY_PARSED) return BYDAY_PARSED[code];
   const m = /^(-?\d+)?([A-Z]{2})$/.exec(code);
-  if (!m) return null;
+  if (!m) return (BYDAY_PARSED[code] = null);
   const dow = BYDAY_CODES.indexOf(m[2]);
-  if (dow < 0) return null;
-  return { ord: m[1] ? parseInt(m[1], 10) : null, dow };
+  if (dow < 0) return (BYDAY_PARSED[code] = null);
+  return (BYDAY_PARSED[code] = { ord: m[1] ? parseInt(m[1], 10) : null, dow });
 }
 
 // Does `cur` match a MONTHLY BYDAY code in its own month? Ord = null means
@@ -297,9 +301,17 @@ export function rruleSummary(rrule?: RRule): string {
     return i === 1 ? 'Repeats weekly' : `Repeats every ${i} weeks`;
   }
   if (rrule.freq === 'monthly') {
-    const byday = (rrule.byday || []).join(',');
-    if (byday) return i === 1 ? `Repeats monthly (${byday})` : `Repeats every ${i} months (${byday})`;
-    return i === 1 ? 'Repeats monthly' : `Repeats every ${i} months`;
+    const labels = (rrule.byday || []).map((code) => {
+      const p = parseByday(code);
+      if (!p) return code;
+      const day = BYDAY_LABEL[BYDAY_CODES[p.dow]];
+      if (p.ord === null) return day;
+      if (p.ord === -1) return `last ${day}`;
+      const suf = p.ord >= 1 && p.ord <= 3 ? ['st', 'nd', 'rd'][p.ord - 1] : 'th';
+      return `${p.ord}${suf} ${day}`;
+    });
+    const suffix = labels.length ? ` on ${labels.join(', ')}` : '';
+    return i === 1 ? `Repeats monthly${suffix}` : `Repeats every ${i} months${suffix}`;
   }
   if (rrule.freq === 'yearly') return i === 1 ? 'Repeats yearly' : `Repeats every ${i} years`;
   return 'Repeats';
