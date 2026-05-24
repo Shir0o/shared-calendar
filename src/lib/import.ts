@@ -24,7 +24,7 @@ function newId(): string {
 }
 
 // ─── ICS (.ics / iCalendar) ──────────────────────────────────────────────────
-const SUPPORTED_FREQ: Record<string, Freq> = { DAILY: 'daily', WEEKLY: 'weekly', MONTHLY: 'monthly' };
+const SUPPORTED_FREQ: Record<string, Freq> = { DAILY: 'daily', WEEKLY: 'weekly', MONTHLY: 'monthly', YEARLY: 'yearly' };
 
 type Recur = InstanceType<typeof ICAL.Recur>;
 

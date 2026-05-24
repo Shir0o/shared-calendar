@@ -19,9 +19,10 @@ interface TopBarProps {
   conflictCount: number;
   onConflictClick: () => void;
   onToday: () => void;
+  onOpenSidebar?: () => void;
 }
 
-export const TopBar = ({ view, setView, cursor, setCursor, query, setQuery, conflictCount, onConflictClick, onToday }: TopBarProps) => {
+export const TopBar = ({ view, setView, cursor, setCursor, query, setQuery, conflictCount, onConflictClick, onToday, onOpenSidebar }: TopBarProps) => {
   const stepCursor = (dir: number) => {
     const c = new Date(cursor);
     if (view === 'week') c.setDate(c.getDate() + dir * 7);
@@ -46,6 +47,7 @@ export const TopBar = ({ view, setView, cursor, setCursor, query, setQuery, conf
   return (
     <header className="topbar">
       <div className="topbar-left">
+        {onOpenSidebar && <IconBtn icon="list" label="Open menu" onClick={onOpenSidebar} />}
         <div className="date-nav">
           <button className="today-btn mono" onClick={onToday}>
             <Icon name="today" size={11} />

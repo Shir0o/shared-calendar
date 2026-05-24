@@ -29,6 +29,7 @@ import { MorePopover } from './components/MorePopover';
 import { HoverPreview } from './components/HoverPreview';
 import { TweaksPanel, useTweaks } from './components/TweaksPanel';
 import { AccessPanel } from './views/AccessPanel';
+import { useIsMobile } from './lib/useIsMobile';
 import type { HoverPayload, MorePayload, ViewId } from './types';
 
 const ACCENTS: Record<string, { c: string; soft: string; h: number }> = {
@@ -45,9 +46,11 @@ export const CalendarApp = () => {
   const canCreate = role === 'member' || canEdit;
   const [t, setTweak] = useTweaks();
 
+  const isMobile = useIsMobile();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [cursor, setCursor] = useState<Date>(() => new Date());
-  const [view, setView] = useState<ViewId>(t.defaultView);
+  const [view, setView] = useState<ViewId>(() => (isMobile ? 'agenda' : t.defaultView));
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pickedEvent, setPickedEvent] = useState<CalendarEvent | null>(null);
   const [editingEvent, setEditingEvent] = useState<EditorInitial | null>(null);
   const [hoverEvent, setHoverEvent] = useState<HoverPayload | null>(null);
@@ -288,23 +291,26 @@ export const CalendarApp = () => {
   };
 
   return (
-    <div className={'app view-' + view + ' ' + themeClass + ' ' + densityClass} style={{ '--accent': accent.c, '--accent-soft': accent.soft, '--accent-h': accent.h } as React.CSSProperties}>
-      <Sidebar
-        cursor={cursor}
-        setCursor={setCursor}
-        rawEvents={events}
-        expandedEvents={expanded}
-        catFilter={catFilter}
-        setCatFilter={setCatFilter}
-        accent={accent}
-        role={role!}
-        canCreate={canCreate}
-        onCreate={() => createAt(cursor)}
-        onOpenImport={() => setImportOpen(true)}
-        onPickEvent={onPickEvent}
-        onOpenAccess={() => setAccessOpen(true)}
-        onSignOut={signOutUser}
-      />
+    <div className={'app view-' + view + ' ' + themeClass + ' ' + densityClass + (sidebarOpen ? ' sidebar-open' : '')} style={{ '--accent': accent.c, '--accent-soft': accent.soft, '--accent-h': accent.h } as React.CSSProperties}>
+      <div className={'sidebar-wrap' + (sidebarOpen ? ' open' : '')}>
+        <Sidebar
+          cursor={cursor}
+          setCursor={setCursor}
+          rawEvents={events}
+          expandedEvents={expanded}
+          catFilter={catFilter}
+          setCatFilter={setCatFilter}
+          accent={accent}
+          role={role!}
+          canCreate={canCreate}
+          onCreate={() => { createAt(cursor); setSidebarOpen(false); }}
+          onOpenImport={() => { setImportOpen(true); setSidebarOpen(false); }}
+          onPickEvent={(e) => { onPickEvent(e); setSidebarOpen(false); }}
+          onOpenAccess={() => { setAccessOpen(true); setSidebarOpen(false); }}
+          onSignOut={signOutUser}
+        />
+      </div>
+      {isMobile && sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
 
       <main className="main">
         <TopBar
@@ -317,6 +323,7 @@ export const CalendarApp = () => {
           conflictCount={monthConflictCount}
           onConflictClick={jumpToFirstConflict}
           onToday={() => setCursor(new Date())}
+          onOpenSidebar={isMobile ? () => setSidebarOpen(true) : undefined}
         />
 
         {query && <SearchResults query={query} events={filtered} onPick={onPickEvent} onClose={() => setQuery('')} />}

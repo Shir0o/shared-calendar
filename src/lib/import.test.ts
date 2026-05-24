@@ -63,12 +63,20 @@ describe('parseICS', () => {
     expect(ev.rrule?.count).toBe(10);
   });
 
-  it('warns on unsupported recurrence (YEARLY)', () => {
+  it('maps a YEARLY RRULE', () => {
     const yearly = parseICS(
       `BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:y\nSUMMARY:Anniversary\nDTSTART;VALUE=DATE:20260101\nRRULE:FREQ=YEARLY\nEND:VEVENT\nEND:VCALENDAR`,
     );
-    expect(yearly[0].event.rrule).toBeUndefined();
-    expect(yearly[0].warnings.length).toBeGreaterThan(0);
+    expect(yearly[0].event.rrule?.freq).toBe('yearly');
+    expect(yearly[0].warnings).toHaveLength(0);
+  });
+
+  it('maps a MONTHLY+BYDAY RRULE (first Sunday)', () => {
+    const monthly = parseICS(
+      `BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:m\nSUMMARY:First Sunday\nDTSTART;VALUE=DATE:20260301\nRRULE:FREQ=MONTHLY;BYDAY=1SU\nEND:VEVENT\nEND:VCALENDAR`,
+    );
+    expect(monthly[0].event.rrule?.freq).toBe('monthly');
+    expect(monthly[0].event.rrule?.byday).toEqual(['1SU']);
   });
 
   it('throws on malformed input', () => {

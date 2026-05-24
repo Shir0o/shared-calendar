@@ -287,14 +287,14 @@ async function applyPull(
   const existingSnap = await db
     .collection('events')
     .where('gcalFeedId', '==', feedId)
-    .select('gcalUid', 'lastModified')
+    .select('gcalUid', 'lastModified', 'rrule')
     .get();
   const existing: ExistingDoc[] = [];
   existingSnap.forEach((d) => {
     const uid = d.data().gcalUid as string | undefined;
     if (!uid) return;
     const lmTs = d.data().lastModified as Timestamp | undefined;
-    existing.push({ id: d.id, uid, lastModified: lmTs?.toDate() });
+    existing.push({ id: d.id, uid, lastModified: lmTs?.toDate(), hasRrule: !!d.data().rrule });
   });
 
   const plan = planFeedSync(feedId, existing, parsed);
