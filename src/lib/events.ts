@@ -24,19 +24,33 @@ function toDate(v: unknown): Date | undefined {
   return undefined;
 }
 
-function fromDoc(id: string, data: DocumentData): CalendarEvent {
+export function fromDoc(id: string, data: DocumentData): CalendarEvent {
   const rruleRaw = data.rrule as (Omit<RRule, 'until'> & { until?: unknown }) | undefined;
   const rrule: RRule | undefined = rruleRaw
     ? { ...rruleRaw, until: toDate(rruleRaw.until) }
     : undefined;
+
+  const allDay = data.allDay ?? false;
+  let start = toDate(data.start) ?? new Date();
+  let end = toDate(data.end);
+
+  if (allDay) {
+    const s = toDate(data.start) ?? new Date();
+    start = new Date(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate());
+    if (data.end) {
+      const e = toDate(data.end)!;
+      end = new Date(e.getUTCFullYear(), e.getUTCMonth(), e.getUTCDate());
+    }
+  }
+
   return {
     id,
     title: data.title ?? 'Untitled event',
     cat: data.cat ?? 'meeting',
-    start: toDate(data.start) ?? new Date(),
+    start,
     dur: data.dur ?? undefined,
-    allDay: data.allDay ?? false,
-    end: toDate(data.end),
+    allDay,
+    end,
     loc: data.loc ?? '',
     notes: data.notes ?? '',
     rrule,
@@ -52,7 +66,7 @@ function clean<T extends Record<string, unknown>>(obj: T): Record<string, unknow
   return out;
 }
 
-function toFirestore(ev: CalendarEvent): Record<string, unknown> {
+export function toFirestore(ev: CalendarEvent): Record<string, unknown> {
   const rrule = ev.rrule
     ? clean({
         freq: ev.rrule.freq,
@@ -63,13 +77,24 @@ function toFirestore(ev: CalendarEvent): Record<string, unknown> {
         until: ev.rrule.until ? Timestamp.fromDate(ev.rrule.until) : undefined,
       })
     : undefined;
+
+  let start = ev.start;
+  let end = ev.end;
+
+  if (ev.allDay) {
+    start = new Date(Date.UTC(ev.start.getFullYear(), ev.start.getMonth(), ev.start.getDate()));
+    if (ev.end) {
+      end = new Date(Date.UTC(ev.end.getFullYear(), ev.end.getMonth(), ev.end.getDate()));
+    }
+  }
+
   return clean({
     title: ev.title,
     cat: ev.cat,
-    start: Timestamp.fromDate(ev.start),
+    start: Timestamp.fromDate(start),
     dur: ev.dur,
     allDay: ev.allDay ?? false,
-    end: ev.end ? Timestamp.fromDate(ev.end) : undefined,
+    end: end ? Timestamp.fromDate(end) : undefined,
     loc: ev.loc,
     notes: ev.notes,
     rrule,

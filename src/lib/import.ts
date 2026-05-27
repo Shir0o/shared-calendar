@@ -68,16 +68,20 @@ export function parseICS(text: string): ImportCandidate[] {
       errors.push('Missing start date.');
     } else {
       allDay = startTime.isDate;
-      start = startTime.toJSDate();
       if (allDay) {
-        // ICS DTEND for all-day events is already exclusive.
-        if (endTime) end = endTime.toJSDate();
+        start = new Date(startTime.year, startTime.month - 1, startTime.day);
+        if (endTime) {
+          end = new Date(endTime.year, endTime.month - 1, endTime.day);
+        }
         dur = 0;
-      } else if (endTime) {
-        const mins = Math.round((endTime.toJSDate().getTime() - start.getTime()) / 60000);
-        dur = mins > 0 ? mins : 60;
       } else {
-        dur = 60;
+        start = startTime.toJSDate();
+        if (endTime) {
+          const mins = Math.round((endTime.toJSDate().getTime() - start.getTime()) / 60000);
+          dur = mins > 0 ? mins : 60;
+        } else {
+          dur = 60;
+        }
       }
     }
 

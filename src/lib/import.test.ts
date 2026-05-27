@@ -82,6 +82,34 @@ describe('parseICS', () => {
   it('throws on malformed input', () => {
     expect(() => parseICS('not a calendar')).toThrow();
   });
+
+  it('converts all-day event dates to local midnight', () => {
+    const ics = `BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:allday@test
+SUMMARY:All Day Event
+DTSTART;VALUE=DATE:20260522
+DTEND;VALUE=DATE:20260525
+END:VEVENT
+END:VCALENDAR`;
+    const parsed = parseICS(ics);
+    expect(parsed).toHaveLength(1);
+    const ev = parsed[0].event;
+    expect(ev.allDay).toBe(true);
+    // Verified that start represents local midnight for 2026-05-22
+    expect(ev.start.getFullYear()).toBe(2026);
+    expect(ev.start.getMonth()).toBe(4); // May
+    expect(ev.start.getDate()).toBe(22);
+    expect(ev.start.getHours()).toBe(0);
+    expect(ev.start.getMinutes()).toBe(0);
+
+    // Verified that end represents local midnight for 2026-05-25 (exclusive end)
+    expect(ev.end).toBeDefined();
+    expect(ev.end!.getFullYear()).toBe(2026);
+    expect(ev.end!.getMonth()).toBe(4); // May
+    expect(ev.end!.getDate()).toBe(25);
+    expect(ev.end!.getHours()).toBe(0);
+  });
 });
 
 describe('parseDelimited', () => {
