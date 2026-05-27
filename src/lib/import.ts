@@ -69,11 +69,9 @@ export function parseICS(text: string): ImportCandidate[] {
     } else {
       allDay = startTime.isDate;
       if (allDay) {
-        const utcStart = startTime.toJSDate();
-        start = new Date(utcStart.getUTCFullYear(), utcStart.getUTCMonth(), utcStart.getUTCDate());
+        start = new Date(startTime.year, startTime.month - 1, startTime.day);
         if (endTime) {
-          const utcEnd = endTime.toJSDate();
-          end = new Date(utcEnd.getUTCFullYear(), utcEnd.getUTCMonth(), utcEnd.getUTCDate());
+          end = new Date(endTime.year, endTime.month - 1, endTime.day);
         }
         dur = 0;
       } else {

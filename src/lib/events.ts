@@ -24,7 +24,7 @@ function toDate(v: unknown): Date | undefined {
   return undefined;
 }
 
-function fromDoc(id: string, data: DocumentData): CalendarEvent {
+export function fromDoc(id: string, data: DocumentData): CalendarEvent {
   const rruleRaw = data.rrule as (Omit<RRule, 'until'> & { until?: unknown }) | undefined;
   const rrule: RRule | undefined = rruleRaw
     ? { ...rruleRaw, until: toDate(rruleRaw.until) }
@@ -66,7 +66,7 @@ function clean<T extends Record<string, unknown>>(obj: T): Record<string, unknow
   return out;
 }
 
-function toFirestore(ev: CalendarEvent): Record<string, unknown> {
+export function toFirestore(ev: CalendarEvent): Record<string, unknown> {
   const rrule = ev.rrule
     ? clean({
         freq: ev.rrule.freq,
