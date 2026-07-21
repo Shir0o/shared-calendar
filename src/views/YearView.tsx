@@ -45,7 +45,7 @@ export const YearView = ({ cursor, events, onPickEvent, onPickMonth }: YearViewP
     <div className="year">
       {Array.from({ length: 12 }, (_, m) => {
         const date = new Date(year, m, 1);
-        const grid = monthGrid(date, 1);
+        const grid = monthGrid(date);
         return (
           <div key={m} className="year-month">
             <button className="year-month-head" onClick={() => onPickMonth(date)}>
@@ -53,7 +53,7 @@ export const YearView = ({ cursor, events, onPickEvent, onPickMonth }: YearViewP
               <Icon name="arrow" size={11} />
             </button>
             <div className="year-month-dows">
-              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
                 <span key={i}>{d}</span>
               ))}
             </div>

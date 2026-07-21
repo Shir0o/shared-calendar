@@ -28,7 +28,7 @@ interface WeekViewProps {
 }
 
 export const WeekView = ({ cursor, events, conflicts, onPickEvent, onMoveEvent, onCreateAt, density, showWeekends, canDrag, setHoverEvent }: WeekViewProps) => {
-  const weekStart = startOfWeek(cursor, 1);
+  const weekStart = startOfWeek(cursor);
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const visible = showWeekends ? days : days.filter((d) => d.getDay() !== 0 && d.getDay() !== 6);
   const today = startOfDay(new Date());

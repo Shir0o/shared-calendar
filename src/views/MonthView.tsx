@@ -32,7 +32,7 @@ interface MonthViewProps {
 }
 
 export const MonthView = ({ cursor, events, conflicts, onPickEvent, onPickMore, onMoveEvent, onCreateAt, density, showWeekends, canDrag, setHoverEvent }: MonthViewProps) => {
-  const cells = monthGrid(cursor, 1);
+  const cells = monthGrid(cursor);
   const today = startOfDay(new Date());
 
   const weeks: Date[][] = [];
@@ -44,9 +44,8 @@ export const MonthView = ({ cursor, events, conflicts, onPickEvent, onPickMore, 
   return (
     <div className={'month ' + (density === 'compact' ? 'is-compact' : density === 'spacious' ? 'is-spacious' : '')}>
       <div className="month-header" style={{ gridTemplateColumns: `repeat(${dayCols}, 1fr)` }}>
-        {DAY_SHORT.slice(1).concat(DAY_SHORT.slice(0, 1)).map((d, i) => {
-          const origIdx = (i + 1) % 7;
-          if (!showWeekendCol(origIdx)) return null;
+        {DAY_SHORT.map((d, i) => {
+          if (!showWeekendCol(i)) return null;
           return <div key={d} className="month-header-cell">{d}</div>;
         })}
       </div>

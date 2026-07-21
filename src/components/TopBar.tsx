@@ -34,7 +34,7 @@ export const TopBar = ({ view, setView, cursor, setCursor, query, setQuery, conf
   const headline = () => {
     if (view === 'year') return String(cursor.getFullYear());
     if (view === 'week') {
-      const s = startOfWeek(cursor, 1);
+      const s = startOfWeek(cursor);
       const e = addDays(s, 6);
       const sMo = MONTH_SHORT[s.getMonth()];
       const eMo = MONTH_SHORT[e.getMonth()];

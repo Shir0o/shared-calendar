@@ -26,7 +26,7 @@ interface TimelineViewProps {
 }
 
 export const TimelineView = ({ cursor, events, conflicts, onPickEvent, setHoverEvent }: TimelineViewProps) => {
-  const start = startOfWeek(startOfMonth(cursor), 1);
+  const start = startOfWeek(startOfMonth(cursor));
   const totalDays = 42;
   const end = addDays(start, totalDays);
   const DAY_PX = 36;

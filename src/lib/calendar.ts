@@ -108,7 +108,7 @@ export function addDays(date: Date, n: number): Date {
 export function sameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
-export function startOfWeek(date: Date, weekStartsOn = 1): Date {
+export function startOfWeek(date: Date, weekStartsOn = 0): Date {
   const d = startOfDay(date);
   const day = d.getDay();
   d.setDate(d.getDate() - ((day - weekStartsOn + 7) % 7));
@@ -120,7 +120,7 @@ export function startOfMonth(date: Date): Date {
 export function endOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0);
 }
-export function monthGrid(date: Date, weekStartsOn = 1): Date[] {
+export function monthGrid(date: Date, weekStartsOn = 0): Date[] {
   const first = startOfMonth(date);
   const gridStart = startOfWeek(first, weekStartsOn);
   const cells: Date[] = [];
@@ -232,7 +232,7 @@ export function expandEvent(ev: CalendarEvent, rangeStart: Date, rangeEnd: Date)
       const diff = Math.floor((cur.getTime() - seriesStart.getTime()) / MS_DAY);
       include = diff >= 0 && diff % interval === 0;
     } else if (r.freq === 'weekly') {
-      const weeksFromStart = Math.floor((startOfWeek(cur, 1).getTime() - startOfWeek(seriesStart, 1).getTime()) / (7 * MS_DAY));
+      const weeksFromStart = Math.floor((startOfWeek(cur, 0).getTime() - startOfWeek(seriesStart, 0).getTime()) / (7 * MS_DAY));
       if (weeksFromStart >= 0 && weeksFromStart % interval === 0) {
         const dow = BYDAY_CODES[cur.getDay()];
         if (r.byday && r.byday.length) include = r.byday.includes(dow);

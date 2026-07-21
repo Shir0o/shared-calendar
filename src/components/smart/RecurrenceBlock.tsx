@@ -98,7 +98,7 @@ export const RecurrenceBlock = ({ rrule, setRrule, date }: { rrule: RRule | null
               <div className="recur-row">
                 <span className="modal-label">On</span>
                 <div className="recur-dow">
-                  {['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'].map((code) => {
+                  {['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'].map((code) => {
                     const on = (rrule.byday || []).includes(code);
                     return (
                       <button key={code} className={'dow-pill' + (on ? ' is-on' : '')} onClick={() => toggleDay(code)}>

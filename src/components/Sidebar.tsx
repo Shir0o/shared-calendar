@@ -32,7 +32,7 @@ const MiniCal = ({
   events: CalendarEvent[];
   accent: { c: string };
 }) => {
-  const grid = monthGrid(cursor, 1);
+  const grid = monthGrid(cursor);
   const today = startOfDay(new Date());
   const hasEvent = useMemo(() => {
     const m = new Set<string>();
@@ -59,7 +59,7 @@ const MiniCal = ({
         </span>
       </div>
       <div className="mini-dows">
-        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
           <span key={i}>{d}</span>
         ))}
       </div>
