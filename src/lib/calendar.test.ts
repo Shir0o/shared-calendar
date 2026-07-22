@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { expandEvent, isoDate, startOfWeek, monthGrid, type CalendarEvent } from './calendar';
+import { expandEvent, isoDate, startOfWeek, monthGrid, getEventCalendarLabel, type CalendarEvent } from './calendar';
 
 function mk(start: Date, rrule: CalendarEvent['rrule']): CalendarEvent {
   return { id: 'e1', title: 't', cat: 'meeting', start, allDay: true, dur: 0, rrule };
@@ -49,5 +49,26 @@ describe('startOfWeek & monthGrid defaults', () => {
   it('monthGrid first cell is a Sunday by default', () => {
     const grid = monthGrid(new Date(2026, 6, 1)); // July 2026
     expect(grid[0].getDay()).toBe(0); // Sunday
+  });
+});
+
+describe('getEventCalendarLabel', () => {
+  it('returns Shared Calendar for non-gcal events', () => {
+    const ev = mk(new Date(), undefined);
+    const info = getEventCalendarLabel(ev);
+    expect(info).toEqual({ name: 'Shared Calendar', isGcal: false });
+  });
+
+  it('returns Google Calendar (feed label) when feed is known', () => {
+    const ev: CalendarEvent = { ...mk(new Date(), undefined), syncOrigin: 'gcal', gcalFeedId: 'feed-1' };
+    const feedMap = { 'feed-1': 'Engineering Calendar' };
+    const info = getEventCalendarLabel(ev, feedMap);
+    expect(info).toEqual({ name: 'Google Calendar (Engineering Calendar)', isGcal: true });
+  });
+
+  it('returns generic Google Calendar when feed label is not found', () => {
+    const ev: CalendarEvent = { ...mk(new Date(), undefined), syncOrigin: 'gcal' };
+    const info = getEventCalendarLabel(ev);
+    expect(info).toEqual({ name: 'Google Calendar', isGcal: true });
   });
 });

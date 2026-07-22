@@ -7,6 +7,7 @@ import {
   eventEnd,
   expandEvents,
   fmtTime,
+  getEventCalendarLabel,
   isoDate,
   startOfMonth,
   type CalendarEvent,
@@ -24,12 +25,13 @@ export type EditorInitial = Partial<CalendarEvent> & { start: Date };
 interface EventEditorProps {
   initial: EditorInitial;
   allEvents: CalendarEvent[];
+  feedMap?: Record<string, string>;
   onSave: (ev: CalendarEvent) => void;
   onCancel: () => void;
   onDelete: (ev: CalendarEvent, opts?: { series?: boolean }) => void;
 }
 
-export const EventEditor = ({ initial, allEvents, onSave, onCancel, onDelete }: EventEditorProps) => {
+export const EventEditor = ({ initial, allEvents, feedMap, onSave, onCancel, onDelete }: EventEditorProps) => {
   const isNew = !initial.id;
   // When editing a single recurrence instance, the editor produces a detached
   // standalone event — hide series-level controls (recurrence editing).
@@ -125,6 +127,24 @@ export const EventEditor = ({ initial, allEvents, onSave, onCancel, onDelete }: 
 
         <div className="modal-body">
           <input className="modal-title-input" autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Event title" />
+
+          {(() => {
+            const calInfo = getEventCalendarLabel(draft, feedMap);
+            return (
+              <div className="modal-row">
+                <label className="modal-label">Calendar</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--ink)' }}>
+                  <Icon name={calInfo.isGcal ? 'google' : 'cal'} size={13} />
+                  <span>{calInfo.name}</span>
+                </div>
+                {calInfo.isGcal && (
+                  <div className="access-empty mono" style={{ marginTop: 4 }}>
+                    Note: Synced from Google Calendar. Local edits will be overwritten on next sync.
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           <div className="modal-row">
             <label className="modal-label">Category</label>

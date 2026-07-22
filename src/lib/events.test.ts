@@ -72,4 +72,22 @@ describe('Timezone-agnostic all-day serialization', () => {
     expect(ev.end!.getDate()).toBe(25);
     expect(ev.end!.getHours()).toBe(0);
   });
+
+  it('preserves syncOrigin and gcalFeedId in fromDoc and toFirestore', () => {
+    const docData = {
+      title: 'Synced Event',
+      cat: 'meeting',
+      start: Timestamp.fromDate(new Date()),
+      syncOrigin: 'gcal',
+      gcalFeedId: 'feed-abc-123',
+    };
+
+    const ev = fromDocMock('test-3', docData);
+    expect(ev.syncOrigin).toBe('gcal');
+    expect(ev.gcalFeedId).toBe('feed-abc-123');
+
+    const backToDb = toFirestoreMock(ev);
+    expect(backToDb.syncOrigin).toBe('gcal');
+    expect(backToDb.gcalFeedId).toBe('feed-abc-123');
+  });
 });
