@@ -14,6 +14,7 @@ import { removeEvent, saveEvent, saveEventsBatch, subscribeEvents } from './lib/
 import { popAndApply, pushUndo } from './lib/undo';
 import { UndoToast } from './components/UndoToast';
 import { subscribeCategoryOverrides, useCategoryVersion } from './lib/categories';
+import { subscribeGcalFeeds, type GcalFeedStatus } from './lib/gcal';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { SearchResults } from './components/SearchResults';
@@ -59,6 +60,18 @@ export const CalendarApp = () => {
   const [catFilter, setCatFilter] = useState<CategoryId[]>([]);
   const [accessOpen, setAccessOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+
+  // Google Calendar feed subscription for calendar labels
+  const [feeds, setFeeds] = useState<GcalFeedStatus[]>([]);
+  useEffect(() => subscribeGcalFeeds(setFeeds), []);
+
+  const feedMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const f of feeds) {
+      if (f.label) map[f.feedId] = f.label;
+    }
+    return map;
+  }, [feeds]);
 
   // Realtime subscription to the shared event collection.
   useEffect(() => subscribeEvents(setEvents, (e) => console.error('events subscription error', e)), []);
@@ -369,6 +382,7 @@ export const CalendarApp = () => {
           ev={pickedEvent}
           allEvents={filtered}
           canEdit={canEdit}
+          feedMap={feedMap}
           onClose={closePicked}
           onEdit={(opts) => onEditEvent(pickedEvent, opts)}
           onDelete={deleteEvent}
@@ -378,16 +392,16 @@ export const CalendarApp = () => {
       )}
 
       {editingEvent && canEdit && (
-        <EventEditor initial={editingEvent} allEvents={expanded} onSave={handleSave} onCancel={() => setEditingEvent(null)} onDelete={deleteEvent} />
+        <EventEditor initial={editingEvent} allEvents={expanded} feedMap={feedMap} onSave={handleSave} onCancel={() => setEditingEvent(null)} onDelete={deleteEvent} />
       )}
       {/* Members can create but not edit: only show the editor for brand-new drafts. */}
       {editingEvent && !canEdit && !editingEvent.id && (
-        <EventEditor initial={editingEvent} allEvents={expanded} onSave={handleSave} onCancel={() => setEditingEvent(null)} onDelete={deleteEvent} />
+        <EventEditor initial={editingEvent} allEvents={expanded} feedMap={feedMap} onSave={handleSave} onCancel={() => setEditingEvent(null)} onDelete={deleteEvent} />
       )}
 
       {morePayload && <MorePopover payload={morePayload} onClose={() => setMorePayload(null)} onPickEvent={onPickEvent} />}
 
-      <HoverPreview hover={hoverEvent} />
+      <HoverPreview hover={hoverEvent} feedMap={feedMap} />
 
       {accessOpen && role === 'owner' && <AccessPanel onClose={() => setAccessOpen(false)} />}
 

@@ -7,6 +7,7 @@ import {
   fmtDateLong,
   fmtTime,
   fmtTimeFull,
+  getEventCalendarLabel,
   rruleSummary,
   type CalendarEvent,
 } from '../lib/calendar';
@@ -16,6 +17,7 @@ interface EventDetailsProps {
   ev: CalendarEvent;
   allEvents: CalendarEvent[];
   canEdit: boolean;
+  feedMap?: Record<string, string>;
   onClose: () => void;
   onEdit: (opts?: { series?: boolean }) => void;
   onDelete: (ev: CalendarEvent, opts?: { series?: boolean }) => void;
@@ -23,7 +25,7 @@ interface EventDetailsProps {
   onPickEvent: (ev: CalendarEvent) => void;
 }
 
-export const EventDetails = ({ ev, allEvents, canEdit, onClose, onEdit, onDelete, onSkipInstance, onPickEvent }: EventDetailsProps) => {
+export const EventDetails = ({ ev, allEvents, canEdit, feedMap, onClose, onEdit, onDelete, onSkipInstance, onPickEvent }: EventDetailsProps) => {
   const asideRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
@@ -37,6 +39,7 @@ export const EventDetails = ({ ev, allEvents, canEdit, onClose, onEdit, onDelete
   const cat = CAT_BY_ID[ev.cat];
   const conflicts = conflictsForEvent(ev, allEvents);
   const isRecurring = !!ev.rrule || !!ev.__seriesId;
+  const calInfo = getEventCalendarLabel(ev, feedMap);
 
   return (
     <aside className="details" role="dialog" ref={asideRef}>
@@ -101,6 +104,18 @@ export const EventDetails = ({ ev, allEvents, canEdit, onClose, onEdit, onDelete
                 <Icon name="repeat" size={10} />
                 <span>{rruleSummary(ev.rrule)}</span>
               </div>
+            )}
+          </div>
+        </li>
+
+        <li className="details-fact">
+          <span className="details-fact-icon">
+            <Icon name={calInfo.isGcal ? "google" : "cal"} size={14} />
+          </span>
+          <div className="details-fact-body">
+            <div className="details-fact-main">{calInfo.name}</div>
+            {calInfo.isGcal && (
+              <div className="details-fact-sub mono">Synced from Google Calendar</div>
             )}
           </div>
         </li>

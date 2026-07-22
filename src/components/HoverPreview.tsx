@@ -1,11 +1,12 @@
-import { CAT_BY_ID, addDays, eventEnd, eventSpanDays, fmtDate, fmtTime } from '../lib/calendar';
+import { CAT_BY_ID, addDays, eventEnd, eventSpanDays, fmtDate, fmtTime, getEventCalendarLabel } from '../lib/calendar';
 import { Icon } from './ui';
 import type { HoverPayload } from '../types';
 
-export const HoverPreview = ({ hover }: { hover: HoverPayload | null }) => {
+export const HoverPreview = ({ hover, feedMap }: { hover: HoverPayload | null; feedMap?: Record<string, string> }) => {
   if (!hover) return null;
   const { ev, x, y, conflicts } = hover;
   const cat = CAT_BY_ID[ev.cat];
+  const calInfo = getEventCalendarLabel(ev, feedMap);
   const W = 280,
     H = 170;
   const left = Math.min(x + 14, window.innerWidth - W - 12);
@@ -18,6 +19,10 @@ export const HoverPreview = ({ hover }: { hover: HoverPayload | null }) => {
         {ev.rrule && <span className="hover-rep mono">REPEATS</span>}
       </div>
       <div className="hover-title">{ev.title}</div>
+      <div className="hover-meta">
+        <Icon name={calInfo.isGcal ? 'google' : 'cal'} size={11} />
+        <span>{calInfo.name}</span>
+      </div>
       <div className="hover-meta">
         <Icon name="clock" size={11} />
         <span>

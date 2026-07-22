@@ -54,6 +54,8 @@ export function fromDoc(id: string, data: DocumentData): CalendarEvent {
     loc: data.loc ?? '',
     notes: data.notes ?? '',
     rrule,
+    syncOrigin: data.syncOrigin ?? undefined,
+    gcalFeedId: data.gcalFeedId ?? undefined,
   };
 }
 
@@ -98,6 +100,8 @@ export function toFirestore(ev: CalendarEvent): Record<string, unknown> {
     loc: ev.loc,
     notes: ev.notes,
     rrule,
+    syncOrigin: ev.syncOrigin,
+    gcalFeedId: ev.gcalFeedId,
   });
 }
 

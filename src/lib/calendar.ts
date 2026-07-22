@@ -45,9 +45,28 @@ export interface CalendarEvent {
   loc?: string;
   notes?: string;
   rrule?: RRule;
+  syncOrigin?: 'gcal';
+  gcalFeedId?: string;
   // Set on expanded recurrence instances (never persisted):
   __seriesId?: string;
   __instanceDate?: string;
+}
+
+export function getEventCalendarLabel(
+  ev: CalendarEvent,
+  feedMap?: Record<string, string> | Map<string, string>,
+): { name: string; isGcal: boolean } {
+  if (ev.syncOrigin === 'gcal') {
+    let feedName: string | undefined;
+    if (ev.gcalFeedId && feedMap) {
+      feedName = feedMap instanceof Map ? feedMap.get(ev.gcalFeedId) : feedMap[ev.gcalFeedId];
+    }
+    return {
+      name: feedName ? `Google Calendar (${feedName})` : 'Google Calendar',
+      isGcal: true,
+    };
+  }
+  return { name: 'Shared Calendar', isGcal: false };
 }
 
 // Per-category chroma values were tuned individually in the defaults below
