@@ -4,7 +4,6 @@ export interface HoverPayload {
   ev: CalendarEvent;
   x: number;
   y: number;
-  conflicts: number;
 }
 
 export interface MorePayload {
@@ -24,5 +23,4 @@ export interface Tweaks {
   accent: string;
   defaultView: ViewId;
   showWeekends: boolean;
-  showConflicts: boolean;
 }

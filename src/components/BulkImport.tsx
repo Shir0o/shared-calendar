@@ -1,7 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   CATEGORIES,
-  conflictsForEvent,
   fmtDate,
   fmtTime,
   rruleSummary,
@@ -14,7 +13,6 @@ import { pushUndo } from '../lib/undo';
 import { Btn, CatDot, Icon } from './ui';
 
 interface BulkImportProps {
-  existing: CalendarEvent[]; // expanded events, for the conflict heads-up
   onClose: () => void;
   canUndo?: boolean;
 }
@@ -27,7 +25,7 @@ function whenLabel(ev: CalendarEvent): string {
   return `${fmtDate(ev.start)} · ${fmtTime(ev.start)}`;
 }
 
-export const BulkImport = ({ existing, onClose, canUndo = false }: BulkImportProps) => {
+export const BulkImport = ({ onClose, canUndo = false }: BulkImportProps) => {
   const [tab, setTab] = useState<'file' | 'paste'>('file');
   const [text, setText] = useState('');
   const [candidates, setCandidates] = useState<ImportCandidate[] | null>(null);
@@ -58,18 +56,6 @@ export const BulkImport = ({ existing, onClose, canUndo = false }: BulkImportPro
     setCandidates(cands);
   };
 
-  // Conflict heads-up: check each included candidate against existing events
-  // plus the other included candidates.
-  const conflictIdx = useMemo(() => {
-    if (!candidates) return new Set<number>();
-    const includedEvents = candidates.filter((c) => c.include).map((c) => c.event);
-    const pool = [...existing, ...includedEvents];
-    const hits = new Set<number>();
-    candidates.forEach((c, i) => {
-      if (c.include && conflictsForEvent(c.event, pool).length > 0) hits.add(i);
-    });
-    return hits;
-  }, [candidates, existing]);
 
   const update = (i: number, patch: Partial<ImportCandidate>) => {
     setCandidates((prev) => prev && prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
@@ -162,10 +148,10 @@ export const BulkImport = ({ existing, onClose, canUndo = false }: BulkImportPro
           )}
 
           {parseError && (
-            <div className="conflict-banner is-inline">
+            <div className="notice-banner is-inline">
               <Icon name="warn" size={13} />
-              <div className="conflict-banner-body">
-                <div className="conflict-banner-head mono">{parseError}</div>
+              <div className="notice-banner-body">
+                <div className="notice-banner-head mono">{parseError}</div>
               </div>
             </div>
           )}
@@ -224,13 +210,10 @@ export const BulkImport = ({ existing, onClose, canUndo = false }: BulkImportPro
                         </td>
                         <td className="import-status">
                           {blocked && <span className="import-badge is-error" title={c.errors.join('\n')}>Error</span>}
-                          {!blocked && conflictIdx.has(i) && (
-                            <span className="import-badge is-overlap" title="Overlaps an existing event">Overlaps</span>
-                          )}
                           {!blocked && c.warnings.length > 0 && (
                             <span className="import-badge is-warn" title={c.warnings.join('\n')}>Note</span>
                           )}
-                          {!blocked && !conflictIdx.has(i) && c.warnings.length === 0 && (
+                          {!blocked && c.warnings.length === 0 && (
                             <span className="import-badge is-ok">OK</span>
                           )}
                         </td>

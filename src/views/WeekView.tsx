@@ -1,4 +1,4 @@
-// Week view — hour grid 7am→9pm, columns = days. Conflict markers, no avatars.
+// Week view — hour grid 7am→9pm, columns = days. Overlapping events render side-by-side, no avatars.
 import {
   CAT_BY_ID,
   DAY_SHORT,
@@ -17,7 +17,6 @@ import type { HoverPayload } from '../types';
 interface WeekViewProps {
   cursor: Date;
   events: CalendarEvent[];
-  conflicts: Map<string, number>;
   onPickEvent: (ev: CalendarEvent) => void;
   onMoveEvent: (id: string, day: Date) => void;
   onCreateAt: (date: Date) => void;
@@ -27,7 +26,7 @@ interface WeekViewProps {
   setHoverEvent: (h: HoverPayload | null) => void;
 }
 
-export const WeekView = ({ cursor, events, conflicts, onPickEvent, onMoveEvent, onCreateAt, density, showWeekends, canDrag, setHoverEvent }: WeekViewProps) => {
+export const WeekView = ({ cursor, events, onPickEvent, onMoveEvent, onCreateAt, density, showWeekends, canDrag, setHoverEvent }: WeekViewProps) => {
   const weekStart = startOfWeek(cursor);
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const visible = showWeekends ? days : days.filter((d) => d.getDay() !== 0 && d.getDay() !== 6);
@@ -156,7 +155,6 @@ export const WeekView = ({ cursor, events, conflicts, onPickEvent, onMoveEvent, 
                   const top = yFor(ev.start);
                   const bottom = yFor(eventEnd(ev));
                   const height = Math.max(20, bottom - top);
-                  const hasConflict = conflicts.has(ev.id);
                   return (
                     <button
                       key={ev.id}
@@ -167,7 +165,7 @@ export const WeekView = ({ cursor, events, conflicts, onPickEvent, onMoveEvent, 
                         e.stopPropagation();
                         onPickEvent(ev);
                       }}
-                      onMouseEnter={(e) => setHoverEvent({ ev, x: e.clientX, y: e.clientY, conflicts: conflicts.get(ev.id) || 0 })}
+                      onMouseEnter={(e) => setHoverEvent({ ev, x: e.clientX, y: e.clientY })}
                       onMouseLeave={() => setHoverEvent(null)}
                       style={{
                         top,
@@ -182,7 +180,6 @@ export const WeekView = ({ cursor, events, conflicts, onPickEvent, onMoveEvent, 
                       <div className="week-event-title">
                         <span>{ev.title}</span>
                         {ev.rrule && <Icon name="repeat" size={10} />}
-                        {hasConflict && <Icon name="warn" size={11} className="event-warn" />}
                       </div>
                       <div className="week-event-meta">
                         <span>

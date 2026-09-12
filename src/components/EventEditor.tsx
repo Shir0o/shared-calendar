@@ -2,20 +2,13 @@ import { useMemo, useState } from 'react';
 import {
   CATEGORIES,
   addDays,
-  conflictsForEvent,
-  endOfMonth,
-  eventEnd,
-  expandEvents,
-  fmtTime,
   getEventCalendarLabel,
   isoDate,
-  startOfMonth,
   type CalendarEvent,
   type CategoryId,
   type RRule,
 } from '../lib/calendar';
 import { Btn, Icon } from './ui';
-import { CAT_BY_ID } from '../lib/calendar';
 import { RecurrenceBlock } from './smart/RecurrenceBlock';
 import { FindFreeSlot } from './smart/FindFreeSlot';
 import { SuggestDates } from './smart/SuggestDates';
@@ -80,17 +73,7 @@ export const EventEditor = ({ initial, allEvents, feedMap, onSave, onCancel, onD
     };
   }, [title, cat, date, allDay, endDate, startH, startM, dur, loc, notes, rrule, initial]);
 
-  const expanded = useMemo(() => {
-    const s = addDays(startOfMonth(date), -14);
-    const e = addDays(endOfMonth(date), 14);
-    return expandEvents(
-      allEvents.filter((ev) => ev.id !== (initial.id || '__never__') && ev.__seriesId !== (initial.id || '__never__')),
-      s,
-      e,
-    );
-  }, [allEvents, date, initial.id]);
 
-  const draftConflicts = useMemo(() => conflictsForEvent(draft, expanded), [draft, expanded]);
 
   const save = () => {
     const start = new Date(date);
@@ -290,30 +273,6 @@ export const EventEditor = ({ initial, allEvents, feedMap, onSave, onCancel, onD
 
           {!allDay && !isInstanceEdit && <RecurrenceBlock rrule={rrule} setRrule={setRrule} date={date} />}
 
-          {draftConflicts.length > 0 && (
-            <div className="conflict-banner is-inline">
-              <Icon name="warn" size={13} />
-              <div className="conflict-banner-body">
-                <div className="conflict-banner-head mono">
-                  Overlaps with {draftConflicts.length} event{draftConflicts.length > 1 ? 's' : ''}
-                </div>
-                <ul>
-                  {draftConflicts.slice(0, 4).map((c) => {
-                    const cc = CAT_BY_ID[c.cat];
-                    return (
-                      <li key={c.id}>
-                        <span className="catdot" style={{ width: 6, height: 6, background: cc.dot }} />
-                        <span className="conflict-time mono">
-                          {fmtTime(c.start)}–{fmtTime(eventEnd(c))}
-                        </span>
-                        <span className="conflict-title">{c.title}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </div>
-          )}
 
           <div className="modal-row">
             <label className="modal-label">Location</label>

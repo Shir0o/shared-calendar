@@ -17,11 +17,10 @@ import { Icon } from '../components/ui';
 interface AgendaViewProps {
   cursor: Date;
   events: CalendarEvent[];
-  conflicts: Map<string, number>;
   onPickEvent: (ev: CalendarEvent) => void;
 }
 
-export const AgendaView = ({ cursor, events, conflicts, onPickEvent }: AgendaViewProps) => {
+export const AgendaView = ({ cursor, events, onPickEvent }: AgendaViewProps) => {
   const start = startOfMonth(cursor);
   const end = addDays(endOfMonth(cursor), 1);
   const list = events
@@ -64,7 +63,6 @@ export const AgendaView = ({ cursor, events, conflicts, onPickEvent }: AgendaVie
             <div className="agenda-items">
               {items.map((ev) => {
                 const cat = CAT_BY_ID[ev.cat];
-                const overlapCount = conflicts.get(ev.id) ?? 0;
                 return (
                   <button key={ev.id} className="agenda-item" onClick={() => onPickEvent(ev)}>
                     <span className="agenda-time">
@@ -79,11 +77,6 @@ export const AgendaView = ({ cursor, events, conflicts, onPickEvent }: AgendaVie
                       {cat.label}
                     </span>
                     <span className="agenda-loc">{ev.loc}</span>
-                    {overlapCount > 0 && (
-                      <span className="agenda-conflict mono" title={'Overlaps with ' + overlapCount + ' event' + (overlapCount > 1 ? 's' : '')}>
-                        <Icon name="warn" size={11} /> Overlaps
-                      </span>
-                    )}
                   </button>
                 );
               })}

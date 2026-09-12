@@ -9,9 +9,8 @@ This is **not** a tool for tracking individual members' personal schedules. It i
 single shared event calendar whose purpose is to keep everyone on the same page about
 team events. Concretely it exists to:
 
-- **Avoid double-booking from forgetfulness** — overlapping events are detected and
-  surfaced (conflict badges, a top-bar conflict count, and inline warnings while you
-  create an event).
+- **Show simultaneous events clearly** — overlapping timed events are allowed and
+  render side-by-side in Week view; no warning chrome blocks or flags a valid schedule.
 - **Support pre-planning** — Year and Timeline (Gantt) views make it easy to lay out a
   quarter or a whole year at a glance.
 - **Act as a historical record** — past events stay on the calendar as the team's log
@@ -23,7 +22,7 @@ team events. Concretely it exists to:
 
 Events have categories (Product, Meeting, Social, Workshop, Deadline, Travel, Holiday),
 optional recurrence, all-day / multi-day spans, locations, and notes. There are no
-attendees and no per-person availability — conflicts are computed **event-vs-event**.
+attendees and no per-person availability — overlaps are between events, not people.
 
 Views: **Month** (primary), **Week** (hour grid + now-line), **Agenda**, **Timeline**
 (category swimlanes), **Year** (heatmap). Plus search, drag-to-reschedule, and a
