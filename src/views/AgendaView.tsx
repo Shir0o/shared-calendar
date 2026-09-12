@@ -64,9 +64,9 @@ export const AgendaView = ({ cursor, events, conflicts, onPickEvent }: AgendaVie
             <div className="agenda-items">
               {items.map((ev) => {
                 const cat = CAT_BY_ID[ev.cat];
-                const hasConflict = conflicts.has(ev.id);
+                const overlapCount = conflicts.get(ev.id) ?? 0;
                 return (
-                  <button key={ev.id} className={'agenda-item' + (hasConflict ? ' has-conflict' : '')} onClick={() => onPickEvent(ev)}>
+                  <button key={ev.id} className="agenda-item" onClick={() => onPickEvent(ev)}>
                     <span className="agenda-time">
                       {ev.allDay ? 'All day' : ev.cat === 'deadline' ? 'Due ' + fmtTime(ev.start) : fmtTime(ev.start) + '–' + fmtTime(eventEnd(ev))}
                     </span>
@@ -79,9 +79,9 @@ export const AgendaView = ({ cursor, events, conflicts, onPickEvent }: AgendaVie
                       {cat.label}
                     </span>
                     <span className="agenda-loc">{ev.loc}</span>
-                    {hasConflict && (
-                      <span className="agenda-conflict mono">
-                        <Icon name="warn" size={11} /> CONFLICT
+                    {overlapCount > 0 && (
+                      <span className="agenda-conflict mono" title={'Overlaps with ' + overlapCount + ' event' + (overlapCount > 1 ? 's' : '')}>
+                        <Icon name="warn" size={11} /> Overlaps
                       </span>
                     )}
                   </button>

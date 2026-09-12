@@ -225,7 +225,7 @@ export const BulkImport = ({ existing, onClose, canUndo = false }: BulkImportPro
                         <td className="import-status">
                           {blocked && <span className="import-badge is-error" title={c.errors.join('\n')}>Error</span>}
                           {!blocked && conflictIdx.has(i) && (
-                            <span className="import-badge is-warn" title="Overlaps an existing event">Conflict</span>
+                            <span className="import-badge is-overlap" title="Overlaps an existing event">Overlaps</span>
                           )}
                           {!blocked && c.warnings.length > 0 && (
                             <span className="import-badge is-warn" title={c.warnings.join('\n')}>Note</span>

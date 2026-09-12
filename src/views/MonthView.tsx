@@ -246,7 +246,7 @@ const MonthWeek = ({ days, events, conflicts, cursor, today, onPickEvent, onPick
                 return (
                   <button
                     key={ev.id}
-                    className={'month-event' + (hasConflict ? ' has-conflict' : '')}
+                    className="month-event"
                     draggable={canDrag && !ev.rrule}
                     onDragStart={(e) => e.dataTransfer.setData('text/event', ev.id)}
                     onClick={(e) => {

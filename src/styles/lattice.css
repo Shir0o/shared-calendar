@@ -30,6 +30,10 @@ body {
   --shadow-card:  0 0 0 1px var(--border), 0 8px 24px -8px oklch(0.20 0.02 80 / 0.18), 0 2px 6px -2px oklch(0.20 0.02 80 / 0.08);
   --shadow-pop:   0 0 0 1px var(--border), 0 16px 40px -10px oklch(0.18 0.02 80 / 0.28);
   --weekend-tint: oklch(0.975 0.005 80);
+  --conflict-bg:     oklch(0.975 0.02 80);
+  --conflict-border: oklch(0.90 0.045 80);
+  --conflict-ink:    oklch(0.42 0.075 70);
+  --conflict-icon:   oklch(0.60 0.10 70);
 }
 
 /* ─── Dark theme ───────────────────────────────────────────────────────── */
@@ -50,6 +54,10 @@ body {
   --shadow-card:  0 0 0 1px var(--border), 0 8px 24px -6px #000a;
   --shadow-pop:   0 0 0 1px var(--border), 0 16px 40px -8px #000d;
   --weekend-tint: oklch(0.18 0.008 260);
+  --conflict-bg:     oklch(0.24 0.018 80);
+  --conflict-border: oklch(0.35 0.035 80);
+  --conflict-ink:    oklch(0.86 0.065 80);
+  --conflict-icon:   oklch(0.76 0.09 80);
 }
 .theme-dark .month-bar,
 .theme-dark .week-event,
@@ -258,17 +266,14 @@ body {
 .search .kbd { background: var(--surface); color: var(--ink-3); border: 1px solid var(--border); font-size: 9.5px; padding: 1px 4px; }
 
 .conflict-pill {
-  appearance: none; border: 1px solid oklch(0.86 0.10 32);
-  background: oklch(0.97 0.04 32); color: oklch(0.40 0.14 32);
+  appearance: none; border: 1px solid var(--conflict-border);
+  background: var(--conflict-bg); color: var(--conflict-ink);
   cursor: pointer;
   display: inline-flex; align-items: center; gap: 5px;
   padding: 4px 9px 4px 7px; border-radius: 999px;
   font: inherit; font-size: 11px; font-weight: 500;
 }
-.conflict-pill:hover { background: oklch(0.95 0.05 32); }
-.theme-dark .conflict-pill {
-  background: oklch(0.32 0.07 32); border-color: oklch(0.45 0.10 32); color: oklch(0.86 0.10 32);
-}
+.conflict-pill:hover { background: var(--conflict-border); }
 
 /* Search results pop */
 .search-pop {
@@ -839,11 +844,11 @@ body {
 .hover-conflict {
   display: inline-flex; align-items: center; gap: 5px;
   margin-top: 6px; padding: 4px 6px;
-  background: oklch(0.95 0.05 32); color: oklch(0.40 0.14 32);
-  border-radius: 4px; font-size: 10.5px; font-weight: 600;
-  letter-spacing: 0.04em; text-transform: uppercase;
+  background: var(--conflict-bg); border: 1px solid var(--conflict-border);
+  color: var(--conflict-ink);
+  border-radius: 4px; font-size: 10.5px; font-weight: 500;
+  letter-spacing: 0.01em;
 }
-.theme-dark .hover-conflict { background: oklch(0.30 0.08 32); color: oklch(0.86 0.10 32); }
 .hover-notes {
   margin-top: 4px; font-size: 11.5px; color: var(--ink-2); line-height: 1.4;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
@@ -982,6 +987,10 @@ body {
 }
 .import-badge.is-ok { background: var(--surface-2); color: var(--ink-3); }
 .import-badge.is-warn { background: oklch(0.95 0.05 85); color: oklch(0.4 0.12 70); }
+.import-badge.is-overlap {
+  background: var(--conflict-bg); border: 1px solid var(--conflict-border);
+  color: var(--conflict-ink); text-transform: none; letter-spacing: 0;
+}
 .import-badge.is-error { background: oklch(0.95 0.05 28); color: oklch(0.45 0.16 28); }
 .import-count { color: var(--ink-3); font-size: 11px; }
 
@@ -1100,46 +1109,25 @@ body {
 }
 
 /* ─── Conflict markers on events ──────────────────────────────────────── */
-.event-warn { color: oklch(0.55 0.18 32); flex-shrink: 0; }
-.theme-dark .event-warn { color: oklch(0.78 0.14 32); }
+.event-warn { color: var(--conflict-icon); flex-shrink: 0; }
 
-.month-event.has-conflict {
-  background: oklch(0.99 0.02 32);
-  box-shadow: inset 0 0 0 1px oklch(0.85 0.08 32);
-}
-.theme-dark .month-event.has-conflict {
-  background: oklch(0.27 0.04 32);
-  box-shadow: inset 0 0 0 1px oklch(0.40 0.10 32);
-}
-
-.week-event.has-conflict {
-  outline: 1.5px solid oklch(0.65 0.15 32);
-  outline-offset: -1.5px;
-}
-.tl-bar.has-conflict {
-  box-shadow: inset 0 0 0 1.5px oklch(0.65 0.15 32);
-}
 
 .cell-conflict-badge {
   display: inline-flex; align-items: center; gap: 2px;
   font-size: 9px; font-weight: 700;
   padding: 1px 4px 1px 3px;
   border-radius: 3px;
-  background: oklch(0.95 0.05 32); color: oklch(0.40 0.14 32);
+  background: var(--conflict-bg); color: var(--conflict-ink);
   letter-spacing: 0.04em;
 }
-.theme-dark .cell-conflict-badge { background: oklch(0.30 0.07 32); color: oklch(0.86 0.10 32); }
 
-.agenda-item.has-conflict { background: oklch(0.99 0.015 32); }
-.theme-dark .agenda-item.has-conflict { background: oklch(0.22 0.02 32); }
 .agenda-rep { color: var(--ink-3); margin-left: 4px; }
 .agenda-conflict {
   display: inline-flex; align-items: center; gap: 3px;
-  font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em;
-  color: oklch(0.45 0.15 32); padding: 2px 6px; border-radius: 3px;
-  background: oklch(0.95 0.05 32);
+  font-size: 9.5px; font-weight: 500; letter-spacing: 0.02em;
+  color: var(--conflict-ink); padding: 2px 6px; border-radius: 3px;
+  background: var(--conflict-bg); border: 1px solid var(--conflict-border);
 }
-.theme-dark .agenda-conflict { color: oklch(0.86 0.10 32); background: oklch(0.30 0.07 32); }
 
 .agenda-item {
   grid-template-columns: 110px 10px 1fr auto auto auto !important;
@@ -1151,21 +1139,18 @@ body {
 /* ─── Conflict banner (in details + editor) ───────────────────────────── */
 .conflict-banner {
   margin: 0 18px 14px;
-  background: oklch(0.97 0.04 32);
-  border: 1px solid oklch(0.86 0.08 32);
+  background: var(--conflict-bg);
+  border: 1px solid var(--conflict-border);
   border-radius: 8px;
   padding: 10px 12px;
   display: flex; gap: 10px;
-  color: oklch(0.36 0.14 32);
+  color: var(--conflict-ink);
 }
 .conflict-banner.is-inline { margin: 0; }
-.theme-dark .conflict-banner {
-  background: oklch(0.28 0.05 32); border-color: oklch(0.42 0.10 32); color: oklch(0.86 0.10 32);
-}
-.conflict-banner > svg:first-child { flex-shrink: 0; margin-top: 2px; }
+.conflict-banner > svg:first-child { flex-shrink: 0; margin-top: 2px; color: var(--conflict-icon); }
 .conflict-banner-body { flex: 1; min-width: 0; }
 .conflict-banner-head {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em;
   margin-bottom: 6px;
 }
 .conflict-banner ul {
@@ -1181,7 +1166,7 @@ body {
   padding: 2px 0;
   font-size: 12px;
 }
-.conflict-banner li button:hover { color: oklch(0.30 0.16 32); }
+.conflict-banner li button:hover { color: var(--ink); }
 .conflict-time { font-size: 10.5px; opacity: 0.85; }
 .conflict-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 

@@ -61,7 +61,7 @@ export const EventDetails = ({ ev, allEvents, canEdit, feedMap, onClose, onEdit,
           <Icon name="warn" size={13} />
           <div className="conflict-banner-body">
             <div className="conflict-banner-head mono">
-              CONFLICT · {conflicts.length} overlapping event{conflicts.length > 1 ? 's' : ''}
+              Overlaps with {conflicts.length} event{conflicts.length > 1 ? 's' : ''}
             </div>
             <ul>
               {conflicts.map((c) => {

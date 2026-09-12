@@ -107,7 +107,7 @@ export const TimelineView = ({ cursor, events, conflicts, onPickEvent, setHoverE
                 return (
                   <button
                     key={ev.id}
-                    className={'tl-bar' + (hasConflict ? ' has-conflict' : '')}
+                    className="tl-bar"
                     style={{
                       left: x,
                       top: row * ROW_H + 4,
