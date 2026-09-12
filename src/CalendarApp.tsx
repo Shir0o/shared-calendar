@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   addDays,
-  conflictMap,
   expandEvents,
   fmtDate,
   startOfDay,
@@ -88,19 +87,6 @@ export const CalendarApp = () => {
   }, [events, cursor]);
 
   const filtered = useMemo(() => expanded.filter((e) => !catFilter.includes(e.cat)), [expanded, catFilter]);
-
-  const conflicts = useMemo(() => (t.showConflicts ? conflictMap(filtered) : new Map<string, number>()), [filtered, t.showConflicts]);
-
-  const monthConflictCount = useMemo(() => {
-    const mo = cursor.getMonth(),
-      yr = cursor.getFullYear();
-    let n = 0;
-    conflicts.forEach((_, id) => {
-      const ev = filtered.find((e) => e.id === id);
-      if (ev && ev.start.getMonth() === mo && ev.start.getFullYear() === yr) n++;
-    });
-    return n;
-  }, [conflicts, filtered, cursor]);
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
   const moveEvent = (id: string, day: Date) => {
@@ -289,20 +275,6 @@ export const CalendarApp = () => {
   const themeClass = 'theme-' + (t.theme === 'dark' ? 'dark' : 'light');
   const densityClass = 'density-' + (t.density || 'default');
 
-  const jumpToFirstConflict = () => {
-    const mo = cursor.getMonth(),
-      yr = cursor.getFullYear();
-    for (const [id] of conflicts) {
-      const ev = filtered.find((e) => e.id === id);
-      if (ev && ev.start.getMonth() === mo && ev.start.getFullYear() === yr) {
-        setCursor(new Date(ev.start));
-        setView('week');
-        setTimeout(() => setPickedEvent(ev), 50);
-        return;
-      }
-    }
-  };
-
   return (
     <div className={'app view-' + view + ' ' + themeClass + ' ' + densityClass + (sidebarOpen ? ' sidebar-open' : '')} style={{ '--accent': accent.c, '--accent-soft': accent.soft, '--accent-h': accent.h } as React.CSSProperties}>
       <div className={'sidebar-wrap' + (sidebarOpen ? ' open' : '')}>
@@ -333,8 +305,6 @@ export const CalendarApp = () => {
           setCursor={setCursor}
           query={query}
           setQuery={setQuery}
-          conflictCount={monthConflictCount}
-          onConflictClick={jumpToFirstConflict}
           onToday={() => setCursor(new Date())}
           onOpenSidebar={isMobile ? () => setSidebarOpen(true) : undefined}
         />
@@ -346,7 +316,6 @@ export const CalendarApp = () => {
             <MonthView
               cursor={cursor}
               events={filtered}
-              conflicts={conflicts}
               onPickEvent={onPickEvent}
               onPickMore={setMorePayload}
               onMoveEvent={moveEvent}
@@ -361,7 +330,6 @@ export const CalendarApp = () => {
             <WeekView
               cursor={cursor}
               events={filtered}
-              conflicts={conflicts}
               onPickEvent={onPickEvent}
               onMoveEvent={moveEvent}
               onCreateAt={createAt}
@@ -371,8 +339,8 @@ export const CalendarApp = () => {
               setHoverEvent={setHoverEvent}
             />
           )}
-          {view === 'agenda' && <AgendaView cursor={cursor} events={filtered} conflicts={conflicts} onPickEvent={onPickEvent} />}
-          {view === 'timeline' && <TimelineView cursor={cursor} events={filtered} conflicts={conflicts} onPickEvent={onPickEvent} setHoverEvent={setHoverEvent} />}
+          {view === 'agenda' && <AgendaView cursor={cursor} events={filtered} onPickEvent={onPickEvent} />}
+          {view === 'timeline' && <TimelineView cursor={cursor} events={filtered} onPickEvent={onPickEvent} setHoverEvent={setHoverEvent} />}
           {view === 'year' && <YearView cursor={cursor} events={filtered} onPickEvent={onPickEvent} onPickMonth={(d) => { setCursor(d); setView('month'); }} />}
         </section>
       </main>
@@ -380,14 +348,12 @@ export const CalendarApp = () => {
       {pickedEvent && (
         <EventDetails
           ev={pickedEvent}
-          allEvents={filtered}
           canEdit={canEdit}
           feedMap={feedMap}
           onClose={closePicked}
           onEdit={(opts) => onEditEvent(pickedEvent, opts)}
           onDelete={deleteEvent}
           onSkipInstance={skipInstance}
-          onPickEvent={onPickEvent}
         />
       )}
 
@@ -405,7 +371,7 @@ export const CalendarApp = () => {
 
       {accessOpen && role === 'owner' && <AccessPanel onClose={() => setAccessOpen(false)} />}
 
-      {importOpen && canCreate && <BulkImport existing={expanded} onClose={() => setImportOpen(false)} canUndo={canEdit} />}
+      {importOpen && canCreate && <BulkImport onClose={() => setImportOpen(false)} canUndo={canEdit} />}
 
       <TweaksPanel tweaks={t} setTweak={setTweak} accents={ACCENT_KEYS} />
 

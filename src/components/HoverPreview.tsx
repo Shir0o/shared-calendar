@@ -4,7 +4,7 @@ import type { HoverPayload } from '../types';
 
 export const HoverPreview = ({ hover, feedMap }: { hover: HoverPayload | null; feedMap?: Record<string, string> }) => {
   if (!hover) return null;
-  const { ev, x, y, conflicts } = hover;
+  const { ev, x, y } = hover;
   const cat = CAT_BY_ID[ev.cat];
   const calInfo = getEventCalendarLabel(ev, feedMap);
   const W = 280,
@@ -35,14 +35,6 @@ export const HoverPreview = ({ hover, feedMap }: { hover: HoverPayload | null; f
         <div className="hover-meta">
           <Icon name="pin" size={11} />
           <span>{ev.loc}</span>
-        </div>
-      )}
-      {conflicts > 0 && (
-        <div className="hover-conflict mono">
-          <Icon name="warn" size={11} />
-          <span>
-            Overlaps with {conflicts} other event{conflicts > 1 ? 's' : ''}
-          </span>
         </div>
       )}
       {ev.notes && <div className="hover-notes">{ev.notes}</div>}

@@ -3,7 +3,7 @@
 //
 // This is a *shared workspace* calendar — anyone with access sees and edits the
 // same events. There is no per-person availability; events have NO attendees.
-// Conflicts are detected event-vs-event, not person-vs-person.
+// Overlaps are event-vs-event, not person-vs-person.
 
 export type CategoryId =
   | 'product'
@@ -336,32 +336,9 @@ export function rruleSummary(rrule?: RRule): string {
   return 'Repeats';
 }
 
-// ─── Conflict detection ─────────────────────────────────────────────────────
-export function isConflictable(ev: CalendarEvent): boolean {
+// ─── Busy-time detection ─────────────────────────────────────────────────────
+export function isBusyEvent(ev: CalendarEvent): boolean {
   return !ev.allDay && ev.cat !== 'deadline' && ev.cat !== 'holiday' && (ev.dur || 0) > 0;
-}
-export function eventsOverlap(a: CalendarEvent, b: CalendarEvent): boolean {
-  if (!isConflictable(a) || !isConflictable(b)) return false;
-  const as = a.start.getTime(), ae = eventEnd(a).getTime();
-  const bs = b.start.getTime(), be = eventEnd(b).getTime();
-  return as < be && ae > bs;
-}
-export function conflictsForEvent(ev: CalendarEvent, allEvents: CalendarEvent[]): CalendarEvent[] {
-  if (!isConflictable(ev)) return [];
-  return allEvents.filter((o) => o.id !== ev.id && eventsOverlap(ev, o));
-}
-export function conflictMap(allEvents: CalendarEvent[]): Map<string, number> {
-  const m = new Map<string, number>();
-  const list = allEvents.filter(isConflictable);
-  for (let i = 0; i < list.length; i++) {
-    for (let j = i + 1; j < list.length; j++) {
-      if (eventsOverlap(list[i], list[j])) {
-        m.set(list[i].id, (m.get(list[i].id) || 0) + 1);
-        m.set(list[j].id, (m.get(list[j].id) || 0) + 1);
-      }
-    }
-  }
-  return m;
 }
 
 // ─── Smart suggestions ──────────────────────────────────────────────────────
@@ -386,7 +363,7 @@ export function suggestDates(
     const day = addDays(start, i);
     const dow = day.getDay();
     if (!includeWeekends && (dow === 0 || dow === 6)) continue;
-    const list = eventsForDay(expanded, day).filter(isConflictable);
+    const list = eventsForDay(expanded, day).filter(isBusyEvent);
     const dayStart = new Date(day);
     dayStart.setHours(9, 0, 0, 0);
     const dayEnd = new Date(day);
@@ -406,8 +383,8 @@ export function suggestDates(
 export interface SlotSuggestion {
   h: number;
   m: number;
-  conflicts: number;
-  conflictEvents: CalendarEvent[];
+  busyCount: number;
+  busyEvents: CalendarEvent[];
 }
 
 export function suggestSlots(date: Date, dur: number, events: CalendarEvent[]): SlotSuggestion[] {
@@ -420,10 +397,10 @@ export function suggestSlots(date: Date, dur: number, events: CalendarEvent[]): 
       slotStart.setHours(h, m, 0, 0);
       const slotEnd = new Date(slotStart.getTime() + dur * 60000);
       if (slotEnd.getHours() > 19 || (slotEnd.getHours() === 19 && slotEnd.getMinutes() > 0)) continue;
-      const conflicts = expanded.filter(
-        (e) => isConflictable(e) && sameDay(e.start, day) && e.start < slotEnd && eventEnd(e) > slotStart,
+      const busyEvents = expanded.filter(
+        (e) => isBusyEvent(e) && sameDay(e.start, day) && e.start < slotEnd && eventEnd(e) > slotStart,
       );
-      slots.push({ h, m, conflicts: conflicts.length, conflictEvents: conflicts });
+      slots.push({ h, m, busyCount: busyEvents.length, busyEvents });
     }
   }
   return slots;

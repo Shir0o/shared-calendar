@@ -1,5 +1,5 @@
 // Month view — primary view. Dense, no scroll on day cells.
-// Supports drag-to-reschedule (admins only), hover preview, conflict badges, click to open.
+// Supports drag-to-reschedule (admins only), hover preview, click to open.
 import {
   CAT_BY_ID,
   MONTH_SHORT,
@@ -20,7 +20,6 @@ import type { HoverPayload, MorePayload } from '../types';
 interface MonthViewProps {
   cursor: Date;
   events: CalendarEvent[];
-  conflicts: Map<string, number>;
   onPickEvent: (ev: CalendarEvent) => void;
   onPickMore: (payload: MorePayload) => void;
   onMoveEvent: (id: string, day: Date) => void;
@@ -31,7 +30,7 @@ interface MonthViewProps {
   setHoverEvent: (h: HoverPayload | null) => void;
 }
 
-export const MonthView = ({ cursor, events, conflicts, onPickEvent, onPickMore, onMoveEvent, onCreateAt, density, showWeekends, canDrag, setHoverEvent }: MonthViewProps) => {
+export const MonthView = ({ cursor, events, onPickEvent, onPickMore, onMoveEvent, onCreateAt, density, showWeekends, canDrag, setHoverEvent }: MonthViewProps) => {
   const cells = monthGrid(cursor);
   const today = startOfDay(new Date());
 
@@ -56,7 +55,6 @@ export const MonthView = ({ cursor, events, conflicts, onPickEvent, onPickMore, 
             key={wi}
             days={week}
             events={events}
-            conflicts={conflicts}
             cursor={cursor}
             today={today}
             onPickEvent={onPickEvent}
@@ -77,7 +75,6 @@ export const MonthView = ({ cursor, events, conflicts, onPickEvent, onPickMore, 
 interface MonthWeekProps {
   days: Date[];
   events: CalendarEvent[];
-  conflicts: Map<string, number>;
   cursor: Date;
   today: Date;
   onPickEvent: (ev: CalendarEvent) => void;
@@ -97,7 +94,7 @@ interface Placed {
   lane: number;
 }
 
-const MonthWeek = ({ days, events, conflicts, cursor, today, onPickEvent, onPickMore, onMoveEvent, onCreateAt, showWeekends, density, canDrag, setHoverEvent }: MonthWeekProps) => {
+const MonthWeek = ({ days, events, cursor, today, onPickEvent, onPickMore, onMoveEvent, onCreateAt, showWeekends, density, canDrag, setHoverEvent }: MonthWeekProps) => {
   const visibleIdx = showWeekends
     ? [0, 1, 2, 3, 4, 5, 6]
     : days.map((_, i) => i).filter((i) => {
@@ -150,14 +147,6 @@ const MonthWeek = ({ days, events, conflicts, cursor, today, onPickEvent, onPick
     },
   });
 
-  const dayConflictCount = (day: Date) => {
-    let n = 0;
-    singles(day).forEach((ev) => {
-      if (conflicts.has(ev.id)) n++;
-    });
-    return n;
-  };
-
   return (
     <div className="month-week" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}>
       {visibleIdx.map((i) => {
@@ -165,7 +154,6 @@ const MonthWeek = ({ days, events, conflicts, cursor, today, onPickEvent, onPick
         const inMonth = day.getMonth() === cursor.getMonth();
         const isToday = sameDay(day, today);
         const isWeekend = day.getDay() === 0 || day.getDay() === 6;
-        const conflictN = dayConflictCount(day);
         return (
           <div
             key={i}
@@ -179,12 +167,6 @@ const MonthWeek = ({ days, events, conflicts, cursor, today, onPickEvent, onPick
                 {day.getDate()}
               </span>
               {isToday && <span className="today-pill">TODAY</span>}
-              {!isToday && conflictN > 0 && (
-                <span className="cell-conflict-badge mono" title={conflictN + ' overlap' + (conflictN > 1 ? 's' : '')}>
-                  <Icon name="warn" size={9} />
-                  {conflictN}
-                </span>
-              )}
             </div>
           </div>
         );
@@ -219,7 +201,7 @@ const MonthWeek = ({ days, events, conflicts, cursor, today, onPickEvent, onPick
                 e.stopPropagation();
                 onPickEvent(ev);
               }}
-              onMouseEnter={(e) => setHoverEvent({ ev, x: e.clientX, y: e.clientY, conflicts: conflicts.get(ev.id) || 0 })}
+              onMouseEnter={(e) => setHoverEvent({ ev, x: e.clientX, y: e.clientY })}
               onMouseLeave={() => setHoverEvent(null)}
             >
               {ev.cat === 'travel' && <Icon name="pin" size={11} />}
@@ -242,7 +224,6 @@ const MonthWeek = ({ days, events, conflicts, cursor, today, onPickEvent, onPick
             <div key={i} className="month-single-col" style={{ paddingTop: barTop * 22 + 4 }}>
               {shown.map((ev) => {
                 const cat = CAT_BY_ID[ev.cat];
-                const hasConflict = conflicts.has(ev.id);
                 return (
                   <button
                     key={ev.id}
@@ -253,7 +234,7 @@ const MonthWeek = ({ days, events, conflicts, cursor, today, onPickEvent, onPick
                       e.stopPropagation();
                       onPickEvent(ev);
                     }}
-                    onMouseEnter={(e) => setHoverEvent({ ev, x: e.clientX, y: e.clientY, conflicts: conflicts.get(ev.id) || 0 })}
+                    onMouseEnter={(e) => setHoverEvent({ ev, x: e.clientX, y: e.clientY })}
                     onMouseLeave={() => setHoverEvent(null)}
                     style={{ '--cat': cat.dot, '--cat-ink': cat.ink, '--cat-soft': cat.soft } as React.CSSProperties}
                   >
@@ -267,7 +248,6 @@ const MonthWeek = ({ days, events, conflicts, cursor, today, onPickEvent, onPick
                         <span className="month-event-time">{fmtTime(ev.start)}</span>
                         <span className="month-event-title">{ev.title}</span>
                         {ev.rrule && <Icon name="repeat" size={9} />}
-                        {hasConflict && <Icon name="warn" size={10} className="event-warn" />}
                       </>
                     )}
                   </button>

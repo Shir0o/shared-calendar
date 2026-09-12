@@ -30,14 +30,14 @@ export const FindFreeSlot = ({ date, dur, allEvents, currentH, currentM, onPick 
         </span>
       </div>
       <div className="finder-grid">
-        {slots.map(({ h, m, conflicts }) => {
-          const cls = conflicts === 0 ? 'sw-free' : 'sw-busy';
+        {slots.map(({ h, m, busyCount }) => {
+          const cls = busyCount === 0 ? 'sw-free' : 'sw-busy';
           const isCurrent = h === currentH && m === currentM;
           return (
             <button
               key={h + ':' + m}
               className={'finder-slot ' + cls + (isCurrent ? ' is-current' : '')}
-              title={conflicts === 0 ? 'Free' : conflicts + ' event' + (conflicts > 1 ? 's' : '') + ' overlap'}
+              title={busyCount === 0 ? 'Free' : busyCount + ' event' + (busyCount > 1 ? 's' : '') + ' scheduled'}
               onClick={() => onPick(h, m)}
             >
               <span className="finder-time mono">{(h % 12 || 12) + (m ? ':' + String(m).padStart(2, '0') : '') + (h >= 12 ? 'p' : 'a')}</span>

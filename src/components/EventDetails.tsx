@@ -1,11 +1,9 @@
 import { useEffect, useRef } from 'react';
 import {
   CAT_BY_ID,
-  conflictsForEvent,
   eventEnd,
   eventSpanDays,
   fmtDateLong,
-  fmtTime,
   fmtTimeFull,
   getEventCalendarLabel,
   rruleSummary,
@@ -15,17 +13,15 @@ import { Btn, Icon, IconBtn } from './ui';
 
 interface EventDetailsProps {
   ev: CalendarEvent;
-  allEvents: CalendarEvent[];
   canEdit: boolean;
   feedMap?: Record<string, string>;
   onClose: () => void;
   onEdit: (opts?: { series?: boolean }) => void;
   onDelete: (ev: CalendarEvent, opts?: { series?: boolean }) => void;
   onSkipInstance: (ev: CalendarEvent) => void;
-  onPickEvent: (ev: CalendarEvent) => void;
 }
 
-export const EventDetails = ({ ev, allEvents, canEdit, feedMap, onClose, onEdit, onDelete, onSkipInstance, onPickEvent }: EventDetailsProps) => {
+export const EventDetails = ({ ev, canEdit, feedMap, onClose, onEdit, onDelete, onSkipInstance }: EventDetailsProps) => {
   const asideRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
@@ -37,7 +33,6 @@ export const EventDetails = ({ ev, allEvents, canEdit, feedMap, onClose, onEdit,
     return () => document.removeEventListener('mousedown', onMouseDown);
   }, [onClose]);
   const cat = CAT_BY_ID[ev.cat];
-  const conflicts = conflictsForEvent(ev, allEvents);
   const isRecurring = !!ev.rrule || !!ev.__seriesId;
   const calInfo = getEventCalendarLabel(ev, feedMap);
 
@@ -56,32 +51,6 @@ export const EventDetails = ({ ev, allEvents, canEdit, feedMap, onClose, onEdit,
       </header>
       <h2 className="details-title">{ev.title}</h2>
 
-      {conflicts.length > 0 && (
-        <div className="conflict-banner">
-          <Icon name="warn" size={13} />
-          <div className="conflict-banner-body">
-            <div className="conflict-banner-head mono">
-              Overlaps with {conflicts.length} event{conflicts.length > 1 ? 's' : ''}
-            </div>
-            <ul>
-              {conflicts.map((c) => {
-                const cc = CAT_BY_ID[c.cat];
-                return (
-                  <li key={c.id}>
-                    <button onClick={() => onPickEvent(c)}>
-                      <span className="catdot" style={{ width: 6, height: 6, background: cc.dot }} />
-                      <span className="conflict-time mono">
-                        {fmtTime(c.start)}–{fmtTime(eventEnd(c))}
-                      </span>
-                      <span className="conflict-title">{c.title}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </div>
-      )}
 
       <ul className="details-facts">
         <li className="details-fact">

@@ -16,13 +16,11 @@ interface TopBarProps {
   setCursor: (d: Date) => void;
   query: string;
   setQuery: (q: string) => void;
-  conflictCount: number;
-  onConflictClick: () => void;
   onToday: () => void;
   onOpenSidebar?: () => void;
 }
 
-export const TopBar = ({ view, setView, cursor, setCursor, query, setQuery, conflictCount, onConflictClick, onToday, onOpenSidebar }: TopBarProps) => {
+export const TopBar = ({ view, setView, cursor, setCursor, query, setQuery, onToday, onOpenSidebar }: TopBarProps) => {
   const stepCursor = (dir: number) => {
     const c = new Date(cursor);
     if (view === 'week') c.setDate(c.getDate() + dir * 7);
@@ -73,13 +71,6 @@ export const TopBar = ({ view, setView, cursor, setCursor, query, setQuery, conf
       </div>
 
       <div className="topbar-right">
-        {conflictCount > 0 && (
-          <button className="conflict-pill" onClick={onConflictClick} title="Show events with overlapping times">
-            <Icon name="warn" size={11} />
-            <span className="mono">{conflictCount}</span>
-            <span>overlap{conflictCount > 1 ? 's' : ''}</span>
-          </button>
-        )}
         <div className="search">
           <Icon name="search" size={13} />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search events…" />

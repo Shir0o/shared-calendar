@@ -13,7 +13,6 @@ export const TWEAK_DEFAULTS: Tweaks = {
   accent: '#4f4cdb',
   defaultView: 'month',
   showWeekends: true,
-  showConflicts: true,
 };
 
 export function useTweaks(): [Tweaks, <K extends keyof Tweaks>(key: K, value: Tweaks[K]) => void] {
@@ -117,13 +116,6 @@ export const TweaksPanel = ({ tweaks, setTweak, accents }: TweaksPanelProps) => 
         </Row>
         <Row label="Show weekends">
           <button className={'toggle' + (tweaks.showWeekends ? ' is-on' : '')} onClick={() => setTweak('showWeekends', !tweaks.showWeekends)}>
-            <span className="toggle-track">
-              <span className="toggle-thumb" />
-            </span>
-          </button>
-        </Row>
-        <Row label="Highlight overlaps">
-          <button className={'toggle' + (tweaks.showConflicts ? ' is-on' : '')} onClick={() => setTweak('showConflicts', !tweaks.showConflicts)}>
             <span className="toggle-track">
               <span className="toggle-thumb" />
             </span>

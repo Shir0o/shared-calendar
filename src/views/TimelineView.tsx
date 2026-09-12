@@ -20,12 +20,11 @@ import type { HoverPayload } from '../types';
 interface TimelineViewProps {
   cursor: Date;
   events: CalendarEvent[];
-  conflicts: Map<string, number>;
   onPickEvent: (ev: CalendarEvent) => void;
   setHoverEvent: (h: HoverPayload | null) => void;
 }
 
-export const TimelineView = ({ cursor, events, conflicts, onPickEvent, setHoverEvent }: TimelineViewProps) => {
+export const TimelineView = ({ cursor, events, onPickEvent, setHoverEvent }: TimelineViewProps) => {
   const start = startOfWeek(startOfMonth(cursor));
   const totalDays = 42;
   const end = addDays(start, totalDays);
@@ -103,7 +102,6 @@ export const TimelineView = ({ cursor, events, conflicts, onPickEvent, setHoverE
               {placed.map(({ ev, row }) => {
                 const x = xFor(ev.start);
                 const w = widthFor(ev);
-                const hasConflict = conflicts.has(ev.id);
                 return (
                   <button
                     key={ev.id}
@@ -118,12 +116,11 @@ export const TimelineView = ({ cursor, events, conflicts, onPickEvent, setHoverE
                       borderLeft: `3px solid ${cat.dot}`,
                     }}
                     onClick={() => onPickEvent(ev)}
-                    onMouseEnter={(e) => setHoverEvent({ ev, x: e.clientX, y: e.clientY, conflicts: conflicts.get(ev.id) || 0 })}
+                    onMouseEnter={(e) => setHoverEvent({ ev, x: e.clientX, y: e.clientY })}
                     onMouseLeave={() => setHoverEvent(null)}
                   >
                     <span className="tl-bar-title">{ev.title}</span>
                     {ev.rrule && <Icon name="repeat" size={10} />}
-                    {hasConflict && <Icon name="warn" size={11} className="event-warn" />}
                     {w > 90 && !ev.allDay && <span className="tl-bar-meta">{fmtTime(ev.start)}</span>}
                   </button>
                 );
