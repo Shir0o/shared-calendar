@@ -295,7 +295,7 @@ export const EventEditor = ({ initial, allEvents, feedMap, onSave, onCancel, onD
               <Icon name="warn" size={13} />
               <div className="conflict-banner-body">
                 <div className="conflict-banner-head mono">
-                  HEADS UP · This {allDay ? 'day' : 'slot'} already has {draftConflicts.length} event{draftConflicts.length > 1 ? 's' : ''}
+                  Overlaps with {draftConflicts.length} event{draftConflicts.length > 1 ? 's' : ''}
                 </div>
                 <ul>
                   {draftConflicts.slice(0, 4).map((c) => {

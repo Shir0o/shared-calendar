@@ -160,7 +160,7 @@ export const WeekView = ({ cursor, events, conflicts, onPickEvent, onMoveEvent, 
                   return (
                     <button
                       key={ev.id}
-                      className={'week-event' + (hasConflict ? ' has-conflict' : '')}
+                      className="week-event"
                       draggable={canDrag && !ev.rrule}
                       onDragStart={(e) => e.dataTransfer.setData('text/event', ev.id)}
                       onClick={(e) => {

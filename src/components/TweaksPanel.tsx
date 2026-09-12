@@ -122,7 +122,7 @@ export const TweaksPanel = ({ tweaks, setTweak, accents }: TweaksPanelProps) => 
             </span>
           </button>
         </Row>
-        <Row label="Highlight conflicts">
+        <Row label="Highlight overlaps">
           <button className={'toggle' + (tweaks.showConflicts ? ' is-on' : '')} onClick={() => setTweak('showConflicts', !tweaks.showConflicts)}>
             <span className="toggle-track">
               <span className="toggle-thumb" />

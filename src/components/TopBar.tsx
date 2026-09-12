@@ -77,7 +77,7 @@ export const TopBar = ({ view, setView, cursor, setCursor, query, setQuery, conf
           <button className="conflict-pill" onClick={onConflictClick} title="Show events with overlapping times">
             <Icon name="warn" size={11} />
             <span className="mono">{conflictCount}</span>
-            <span>conflict{conflictCount > 1 ? 's' : ''}</span>
+            <span>overlap{conflictCount > 1 ? 's' : ''}</span>
           </button>
         )}
         <div className="search">

@@ -41,7 +41,7 @@ export const HoverPreview = ({ hover, feedMap }: { hover: HoverPayload | null; f
         <div className="hover-conflict mono">
           <Icon name="warn" size={11} />
           <span>
-            Conflicts with {conflicts} other event{conflicts > 1 ? 's' : ''}
+            Overlaps with {conflicts} other event{conflicts > 1 ? 's' : ''}
           </span>
         </div>
       )}
