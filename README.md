@@ -101,3 +101,8 @@ npx wrangler pages deploy dist
 - `npm run build` — type-check + production build
 - `npm run lint` — ESLint
 - `npm run preview` — serve the production build locally
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
