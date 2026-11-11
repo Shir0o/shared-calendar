@@ -485,8 +485,16 @@ const CategoryEditRow = ({
   const [error, setError] = useState('');
 
   // Keep local drafts in sync if the doc changes from another tab.
-  useEffect(() => { setDraftLabel(current.label); }, [current.label]);
-  useEffect(() => { setDraftHue(current.hue); }, [current.hue]);
+  const [syncedLabel, setSyncedLabel] = useState(current.label);
+  if (syncedLabel !== current.label) {
+    setSyncedLabel(current.label);
+    setDraftLabel(current.label);
+  }
+  const [syncedHue, setSyncedHue] = useState(current.hue);
+  if (syncedHue !== current.hue) {
+    setSyncedHue(current.hue);
+    setDraftHue(current.hue);
+  }
 
   const isOverridden = current.label !== fallback.label || current.hue !== fallback.hue;
   const previewDot = tokensForHue(draftHue).dot;

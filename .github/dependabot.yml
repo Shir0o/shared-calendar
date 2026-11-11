@@ -10,6 +10,15 @@ updates:
         dependency-type: development
       production-dependencies:
         dependency-type: production
+    # TypeScript 7 ships no JS API, and typescript-eslint hard-fails when it
+    # resolves a typescript >=7 (see
+    # https://github.com/typescript-eslint/typescript-eslint/issues/10940).
+    # Drop this ignore once typescript-eslint supports the TS 7 API, then bump
+    # typescript by hand and re-run `npm run lint`.
+    ignore:
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: github-actions
     directory: /

@@ -14,6 +14,7 @@ body {
 
 /* ─── Light theme ──────────────────────────────────────────────────────── */
 .theme-light {
+  color-scheme: light;
   --bg:           oklch(0.985 0.003 80);
   --surface:      #ffffff;
   --surface-2:    oklch(0.975 0.003 80);
@@ -38,6 +39,7 @@ body {
 
 /* ─── Dark theme ───────────────────────────────────────────────────────── */
 .theme-dark {
+  color-scheme: dark;
   --bg:           oklch(0.16 0.007 260);
   --surface:      oklch(0.20 0.008 260);
   --surface-2:    oklch(0.22 0.008 260);
@@ -64,12 +66,15 @@ body {
 .theme-dark .week-allday-pill,
 .theme-dark .tl-bar { filter: brightness(1.1) saturate(1.2); }
 .theme-dark .month-event { background: var(--surface-2); }
+.theme-dark .month-event-time { color: var(--cat); }
+.theme-dark .month-event:hover { background: var(--surface-3); }
 
 /* ─── App shell ───────────────────────────────────────────────────────── */
 .app {
   display: grid;
   grid-template-columns: 248px 1fr;
   height: 100vh;
+  color: var(--ink);
   background: var(--bg);
   transition: grid-template-columns 160ms ease;
 }
@@ -759,7 +764,7 @@ body {
   font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
 }
 .details-actions { display: flex; gap: 2px; }
-.details-title { margin: 0; padding: 0 18px 14px; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+.details-title { margin: 0; padding: 0 18px 14px; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; color: var(--ink); }
 
 .details-facts {
   list-style: none;
