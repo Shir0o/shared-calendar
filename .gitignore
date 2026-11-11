@@ -29,5 +29,14 @@ dist-ssr
 !.env.example
 *.local
 
+# Service-account keys (MCP server)
+service-account*.json
+
 # Worktrees
 .dsh-worktrees/
+
+# Wrangler local secrets
+.dev.vars
+
+# Wrangler local state
+.wrangler

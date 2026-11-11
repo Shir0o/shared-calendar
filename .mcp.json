@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "shared-calendar": {
+      "command": "./mcp/node_modules/.bin/tsx",
+      "args": ["mcp/src/stdio.ts"],
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "${GOOGLE_APPLICATION_CREDENTIALS}",
+        "FIREBASE_PROJECT_ID": "cisa-cal"
+      }
+    }
+  }
+}
