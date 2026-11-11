@@ -15,6 +15,22 @@ export const TWEAK_DEFAULTS: Tweaks = {
   showWeekends: true,
 };
 
+// Theme class for screens rendered before the app shell (gate, access denied):
+// honor the stored preference, else the OS setting, so dark-mode users aren't
+// flashed a hardcoded light screen.
+export function initialThemeClass(): string {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const theme = (JSON.parse(raw) as { theme?: string } | null)?.theme;
+      if (theme === 'dark' || theme === 'light') return 'theme-' + theme;
+    }
+  } catch {
+    /* ignore */
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'theme-dark' : 'theme-light';
+}
+
 export function useTweaks(): [Tweaks, <K extends keyof Tweaks>(key: K, value: Tweaks[K]) => void] {
   const [tweaks, setTweaks] = useState<Tweaks>(() => {
     try {

@@ -1,10 +1,12 @@
 import { useAuth } from '../lib/auth';
 import { Icon } from '../components/ui';
+import { initialThemeClass } from '../components/TweaksPanel';
 
 export const AccessDenied = () => {
   const { user, signOutUser } = useAuth();
+  const themeClass = initialThemeClass();
   return (
-    <div className="app theme-light density-default gate-screen" style={{ '--accent': 'oklch(0.5 0.18 265)', '--accent-soft': 'oklch(0.95 0.04 265)', '--accent-h': 265 } as React.CSSProperties}>
+    <div className={'app ' + themeClass + ' density-default gate-screen'} style={{ '--accent': 'oklch(0.5 0.18 265)', '--accent-soft': 'oklch(0.95 0.04 265)', '--accent-h': 265 } as React.CSSProperties}>
       <div className="gate-card">
         <div className="gate-icon-badge">
           <Icon name="lock" size={22} />
