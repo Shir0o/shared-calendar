@@ -1,0 +1,28 @@
+{
+  "name": "mcp",
+  "private": true,
+  "type": "module",
+  "description": "MCP server exposing the shared calendar to Claude",
+  "scripts": {
+    "start": "tsx src/stdio.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
+    "smoke": "tsx smoke.mts",
+    "dev:worker": "wrangler dev",
+    "deploy:worker": "wrangler deploy"
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "^9.4.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "firebase-admin": "^14.5.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-oauth-provider": "^1.2.4",
+    "@cloudflare/workers-types": "^4.20260702.1",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "~7.0.2",
+    "vitest": "^5.0.5",
+    "wrangler": "^4.86.0"
+  }
+}

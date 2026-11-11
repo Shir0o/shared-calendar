@@ -1,0 +1,21 @@
+name = "shared-calendar-mcp"
+main = "worker/index.ts"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Create once: npx wrangler kv namespace create OAUTH_KV
+# then paste the id here.
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[vars]
+FIREBASE_PROJECT_ID = "cisa-cal"
+MEMBER_EMAIL = "members@cisa-cal.web.app"
+
+# Secrets (never in this file):
+#   npx wrangler secret put FIREBASE_SERVICE_ACCOUNT   # the service-account JSON, one line
+#   npx wrangler secret put FIREBASE_WEB_API_KEY       # the Firebase web API key
+
+[observability]
+enabled = true
