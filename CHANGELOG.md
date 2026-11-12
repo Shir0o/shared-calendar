@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/Shir0o/shared-calendar/compare/v1.0.0...v1.0.1) (2026-11-12)
+
+
+### Bug Fixes
+
+* **ci:** pin googleapis/release-please-action SHA (alert [#1](https://github.com/Shir0o/shared-calendar/issues/1)) ([#66](https://github.com/Shir0o/shared-calendar/issues/66)) ([a388a48](https://github.com/Shir0o/shared-calendar/commit/a388a48c1b0ba6e783b46ef3fb9ac05082826647))
+
 ## 1.0.0 (2026-11-11)
 
 
