@@ -47,7 +47,7 @@ export const TopBar = ({ view, setView, cursor, setCursor, query, setQuery, onTo
       <div className="topbar-left">
         {onOpenSidebar && <IconBtn icon="list" label="Open menu" onClick={onOpenSidebar} />}
         <div className="date-nav">
-          <button className="today-btn mono" onClick={onToday}>
+          <button className="today-btn mono" onClick={onToday} aria-label="Today" title="Today">
             <Icon name="today" size={11} />
             <span>Today</span>
           </button>
@@ -62,7 +62,7 @@ export const TopBar = ({ view, setView, cursor, setCursor, query, setQuery, onTo
       <div className="topbar-mid">
         <div className="seg">
           {VIEWS.map((v) => (
-            <SegItem key={v.id} active={view === v.id} onClick={() => setView(v.id)}>
+            <SegItem key={v.id} active={view === v.id} onClick={() => setView(v.id)} aria-label={v.label} title={v.label}>
               <Icon name={v.icon} size={12} />
               <span>{v.label}</span>
             </SegItem>
