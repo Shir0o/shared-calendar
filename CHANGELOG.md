@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/Shir0o/shared-calendar/compare/v1.0.0...v1.0.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* **ci:** pin googleapis/release-please-action SHA (alert [#1](https://github.com/Shir0o/shared-calendar/issues/1)) ([#66](https://github.com/Shir0o/shared-calendar/issues/66)) ([a388a48](https://github.com/Shir0o/shared-calendar/commit/a388a48c1b0ba6e783b46ef3fb9ac05082826647))
+* **ui:** fix mobile agenda layout overflow and topbar button labels ([#68](https://github.com/Shir0o/shared-calendar/issues/68)) ([2138bbd](https://github.com/Shir0o/shared-calendar/commit/2138bbd7590e45b27b5306f71846734cf1a50a50))
+
 ## 1.0.0 (2026-11-11)
 
 
