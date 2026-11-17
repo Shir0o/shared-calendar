@@ -1092,10 +1092,6 @@ body {
 
 .agenda-rep { color: var(--ink-3); margin-left: 4px; }
 
-.agenda-item {
-  grid-template-columns: 110px 10px 1fr auto auto auto !important;
-}
-
 .week-event-title { display: inline-flex; align-items: center; gap: 4px; }
 .tl-bar-title { display: inline-flex; align-items: center; gap: 4px; }
 
@@ -1335,6 +1331,30 @@ body {
   }
 
   .main { border-left: 0; }
+
+  .agenda { padding: 8px 14px 28px; }
+  .agenda-items { padding-left: 0; gap: 4px; }
+  .agenda-item {
+    /* Row 1: cat dot · title · cat label. Row 2: time · location.
+       Split the title/location area across two shrinkable tracks so a long
+       location can never squeeze the title or the label off the edge. */
+    grid-template-columns: 10px minmax(0, 1.4fr) minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    gap: 4px 10px;
+    width: 100%;
+    padding: 10px 8px;
+    align-items: center;
+  }
+  .agenda-cat { grid-column: 1; grid-row: 1; align-self: center; }
+  .agenda-title { grid-column: 2 / 4; grid-row: 1; min-width: 0; overflow-wrap: anywhere; }
+  .agenda-cat-label { grid-column: 4; grid-row: 1; justify-self: end; white-space: nowrap; }
+  .agenda-time { grid-column: 2; grid-row: 2; min-width: 0; }
+  .agenda-loc {
+    grid-column: 3 / -1; grid-row: 2;
+    min-width: 0; max-width: none;
+    white-space: normal; overflow: visible; text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
 
   .topbar {
     grid-template-columns: 1fr;

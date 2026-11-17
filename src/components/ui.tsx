@@ -1,5 +1,5 @@
 // Small reusable UI atoms for the shared Team Calendar (no avatars).
-import type { CSSProperties, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
 import { CAT_BY_ID, type Category, type CategoryId } from '../lib/calendar';
 
 type IconName =
@@ -123,8 +123,17 @@ export const Btn = ({
   </button>
 );
 
-export const SegItem = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) => (
-  <button className={'seg-item' + (active ? ' is-active' : '')} onClick={onClick}>
+export const SegItem = ({
+  active,
+  onClick,
+  children,
+  ...rest
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+} & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'children' | 'className'>) => (
+  <button className={'seg-item' + (active ? ' is-active' : '')} onClick={onClick} {...rest}>
     {children}
   </button>
 );
