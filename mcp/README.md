@@ -3,9 +3,13 @@
 Exposes the Lattice calendar to Claude over the Model Context Protocol, so you can
 ask "what's on next week?" or "move the retro to Thursday" from a chat.
 
-The tool layer is transport-agnostic (`src/tools.ts`) and runs over two transports:
-`src/stdio.ts` (Claude Code / Claude Desktop) and `mcp/worker` (claude.ai remote
-connector, OAuth).
+Three entrypoints share one tool layer (`src/tools.ts`):
+
+- **stdio** — `src/stdio.ts` (`npm run start`) for Claude Desktop, Claude Code and Antigravity.
+- **Streamable HTTP** — `src/http-server.ts` (`npm run start:http`) for a container
+  deployment that claude.ai and the Claude mobile app use as a **Custom Connector**.
+- **Cloudflare Worker** — `worker/` (`npm run deploy:worker`) for a serverless
+  Custom Connector with OAuth 2.1 and no container to run.
 
 ## Tools
 
@@ -93,11 +97,10 @@ paths:
 ## Development
 
 ```bash
-cd mcp
-npm install
-npm run typecheck        # stdio + Worker
-npx tsx smoke.mts        # lists tools over a real stdio handshake, no credentials needed
-npx wrangler dev         # Worker + OAuth locally (dummy .dev.vars is enough)
+npm --prefix mcp install
+npm run mcp:typecheck      # stdio + Worker
+npm --prefix mcp run smoke # lists tools over a real stdio handshake, no credentials needed
+npm run mcp:dev:worker     # Worker + OAuth locally (dummy .dev.vars is enough)
 ```
 
 Tests live in `test/tools.test.ts` and `test/rest-store.test.ts` and run from the

@@ -1,21 +1,32 @@
-// stdio transport — for Claude Code and Claude Desktop.
-//
-// Credentials: the Firebase Admin SDK reads GOOGLE_APPLICATION_CREDENTIALS
-// (path to a service-account JSON key) or GOOGLE_APPLICATION_CREDENTIALS_JSON.
-// Nothing is printed to stdout except the MCP protocol: use console.error.
+/**
+ * stdio transport — for Claude Desktop, Claude Code and Antigravity.
+ *
+ * Nothing is printed to stdout except the MCP protocol; diagnostics go to
+ * stderr. The client spawns this process and speaks JSON-RPC over its stdio.
+ */
+import process from 'node:process';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createCalendarServer } from './server';
-import { FirestoreStore } from './store';
+import { createStore, logToStderr } from './store';
+import { TOOLS } from './tools';
 
-const projectId = process.env.FIREBASE_PROJECT_ID ?? 'cisa-cal';
-const actor = process.env.MCP_ACTOR ?? 'claude-stdio';
+const projectId = process.env.FIREBASE_PROJECT_ID?.trim() || 'cisa-cal';
+const actor = process.env.MCP_ACTOR?.trim() || 'claude-stdio';
 
-const server = createCalendarServer(new FirestoreStore(projectId), actor);
+const store = createStore(projectId);
+const server = createCalendarServer(store, actor);
 
-server
-  .connect(new StdioServerTransport())
-  .then(() => console.error(`[shared-calendar] MCP ready (project ${projectId}, actor ${actor})`))
-  .catch((err) => {
-    console.error('[shared-calendar] failed to start:', err);
-    process.exit(1);
-  });
+const transport = new StdioServerTransport();
+await server.connect(transport);
+
+const shutdown = () => {
+  void server.close().finally(() => process.exit(0));
+};
+
+process.stdin.on('end', shutdown);
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+logToStderr(
+  `[shared-calendar-mcp] ready on stdio (project ${projectId}, actor ${actor}; tools: ${TOOLS.map((t) => t.name).join(', ')})`,
+);

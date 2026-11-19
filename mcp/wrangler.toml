@@ -12,10 +12,13 @@ id = "9dce9b56a2254839b32891f125d553d0"
 [vars]
 FIREBASE_PROJECT_ID = "cisa-cal"
 MEMBER_EMAIL = "members@cisa-cal.web.app"
+MCP_MEMBER_ID = "shared-calendar-team"
 
 # Secrets (never in this file):
 #   npx wrangler secret put FIREBASE_SERVICE_ACCOUNT   # the service-account JSON, one line
 #   npx wrangler secret put FIREBASE_WEB_API_KEY       # the Firebase web API key
+#   npx wrangler secret put MCP_ACCESS_PASSWORD        # optional consent-screen shared password
+#   npx wrangler secret put MCP_AUTH_TOKEN             # optional static Bearer token for CLI/IDE clients
 
 [observability]
 enabled = true
