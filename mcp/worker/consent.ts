@@ -47,6 +47,19 @@ export async function handleConsent(request: Request, env: Env, _ctx: ExecutionC
 
 async function verifyTeamPassword(env: Env, password: string): Promise<boolean> {
   if (!password) return false;
+  if (env.MCP_ACCESS_PASSWORD) {
+    const encoder = new TextEncoder();
+    const [provided, wanted] = await Promise.all([
+      crypto.subtle.digest('SHA-256', encoder.encode(password)),
+      crypto.subtle.digest('SHA-256', encoder.encode(env.MCP_ACCESS_PASSWORD)),
+    ]);
+    const a = new Uint8Array(provided);
+    const b = new Uint8Array(wanted);
+    let diff = 0;
+    for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+    if (diff === 0) return true;
+  }
+  if (!env.FIREBASE_WEB_API_KEY) return false;
   const res = await fetch(
     `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(env.FIREBASE_WEB_API_KEY)}`,
     {

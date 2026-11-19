@@ -8,7 +8,13 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mcp": "npm --prefix mcp run start",
+    "mcp:http": "npm --prefix mcp run start:http",
+    "mcp:typecheck": "npm --prefix mcp run typecheck",
+    "mcp:test": "npm --prefix mcp test",
+    "mcp:dev:worker": "npm --prefix mcp run dev:worker",
+    "mcp:deploy:worker": "npm --prefix mcp run deploy:worker"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.5",

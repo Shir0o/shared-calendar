@@ -58,8 +58,8 @@ export function decodeValue(v: FsValue): unknown {
   if ('booleanValue' in v) return v.booleanValue;
   if ('timestampValue' in v) return new Date(v.timestampValue);
   if ('nullValue' in v) return null;
-  if ('arrayValue' in v) return v.arrayValue.values.map(decodeValue);
-  return decodeFields(v.mapValue.fields);
+  if ('arrayValue' in v) return (v.arrayValue.values ?? []).map(decodeValue);
+  return decodeFields(v.mapValue.fields ?? {});
 }
 
 function decodeFields(fields: Record<string, FsValue>): Record<string, unknown> {

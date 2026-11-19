@@ -1,0 +1,27 @@
+# Shared Calendar MCP server over Streamable HTTP (Claude Custom Connector).
+#
+# Build (from the repository root):
+#   docker build -f Dockerfile.mcp -t shared-calendar-mcp .
+# Run:
+#   docker run -p 8080:8080 \
+#     -e MCP_AUTH_TOKEN="$(openssl rand -hex 32)" \
+#     -e FIREBASE_SERVICE_ACCOUNT="$(cat service-account.json)" \
+#     shared-calendar-mcp
+FROM node:24-slim
+
+WORKDIR /app
+
+COPY mcp/package.json mcp/package-lock.json ./mcp/
+RUN npm ci --prefix mcp
+
+COPY shared ./shared
+COPY src/lib/calendar.ts ./src/lib/calendar.ts
+COPY mcp ./mcp
+
+ENV NODE_ENV=production
+ENV PORT=8080
+
+EXPOSE 8080
+
+# tsx is a devDependency, so it must be installed before NODE_ENV=production.
+CMD ["./mcp/node_modules/.bin/tsx", "mcp/src/http-server.ts"]

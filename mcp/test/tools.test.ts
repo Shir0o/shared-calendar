@@ -1,46 +1,9 @@
 // Tool-layer tests. The store is in-memory so these run with no Firebase,
 // no credentials and no network.
 import { describe, expect, it } from 'vitest';
-import type { CalendarEvent } from '../../src/lib/calendar';
-import type { AuditEntry, CalendarStore, EventInput, EventPatch, ToolContext } from '../src/types';
+import { MemoryStore } from '../src/memory';
+import type { CalendarStore, ToolContext } from '../src/types';
 import { TOOLS } from '../src/tools';
-
-class MemoryStore implements CalendarStore {
-  events = new Map<string, CalendarEvent>();
-  audits: AuditEntry[] = [];
-  private seq = 0;
-
-  async listEvents(): Promise<CalendarEvent[]> {
-    return [...this.events.values()];
-  }
-
-  async getEvent(id: string): Promise<CalendarEvent | null> {
-    return this.events.get(id) ?? null;
-  }
-
-  async createEvent(input: EventInput): Promise<string> {
-    const id = `ev${++this.seq}`;
-    this.events.set(id, { id, ...input });
-    return id;
-  }
-
-  async updateEvent(id: string, patch: EventPatch): Promise<CalendarEvent> {
-    const current = this.events.get(id);
-    if (!current) throw new Error(`No event with id ${id}`);
-    const next: CalendarEvent = { ...current, ...patch, start: patch.start ?? current.start };
-    this.events.set(id, next);
-    return next;
-  }
-
-  async deleteEvents(ids: string[]): Promise<number> {
-    for (const id of ids) this.events.delete(id);
-    return ids.length;
-  }
-
-  async appendAudit(entry: AuditEntry): Promise<void> {
-    this.audits.push(entry);
-  }
-}
 
 function tool(name: string) {
   const found = TOOLS.find((t) => t.name === name);
