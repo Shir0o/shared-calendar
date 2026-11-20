@@ -7,6 +7,13 @@ import { RestStore, type ServiceAccount } from '../src/rest-store';
 import type { Env } from './index';
 
 export async function handleMcp(request: Request, env: Env): Promise<Response> {
+  // Stateless servers have no stream to offer on GET. Answering it with an
+  // SSE stream that closes at once makes clients reconnect every second,
+  // which burned through the Workers daily request limit. 405 tells them
+  // not to open one (MCP spec, Streamable HTTP).
+  if (request.method !== 'POST') {
+    return new Response('Method Not Allowed', { status: 405, headers: { allow: 'POST' } });
+  }
   const sa = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT) as ServiceAccount;
   const store = new RestStore({ ...sa, project_id: sa.project_id || env.FIREBASE_PROJECT_ID });
   const server = createCalendarServer(store, env.MCP_ACTOR ?? 'claude-web');
