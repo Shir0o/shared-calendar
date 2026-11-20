@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/Shir0o/shared-calendar/compare/v1.1.0...v1.1.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* **mcp:** refuse GET on the stateless worker to stop reconnect loop ([#73](https://github.com/Shir0o/shared-calendar/issues/73)) ([428329a](https://github.com/Shir0o/shared-calendar/commit/428329a011ed1c241254115b416524e2b6f3e877))
+
 ## [1.1.0](https://github.com/Shir0o/shared-calendar/compare/v1.0.1...v1.1.0) (2026-11-19)
 
 
