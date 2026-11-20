@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/Shir0o/shared-calendar/compare/v1.0.1...v1.1.0) (2026-11-19)
+
+
+### Features
+
+* **mcp:** standardize package layout and worker bearer auth ([#71](https://github.com/Shir0o/shared-calendar/issues/71)) ([83ff01b](https://github.com/Shir0o/shared-calendar/commit/83ff01ba021d1fe466a443b99dafd1a6b8774ce8))
+
 ## [1.0.1](https://github.com/Shir0o/shared-calendar/compare/v1.0.0...v1.0.1) (2026-11-17)
 
 
