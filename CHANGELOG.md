@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/Shir0o/shared-calendar/compare/v1.1.0...v1.1.1) (2026-11-22)
+
+
+### Bug Fixes
+
+* **mcp:** refuse GET on the stateless worker to stop reconnect loop ([#73](https://github.com/Shir0o/shared-calendar/issues/73)) ([428329a](https://github.com/Shir0o/shared-calendar/commit/428329a011ed1c241254115b416524e2b6f3e877))
+* **ui:** align week view all-day columns and truncate pill titles ([#75](https://github.com/Shir0o/shared-calendar/issues/75)) ([3b2a322](https://github.com/Shir0o/shared-calendar/commit/3b2a322df1234d8c96362ea280007778d361c604))
+
 ## [1.1.0](https://github.com/Shir0o/shared-calendar/compare/v1.0.1...v1.1.0) (2026-11-19)
 
 
