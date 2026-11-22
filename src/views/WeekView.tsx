@@ -75,8 +75,11 @@ export const WeekView = ({ cursor, events, onPickEvent, onMoveEvent, onCreateAt,
                     className="week-allday-pill"
                     style={{ background: cat.soft, color: cat.ink, borderLeft: `3px solid ${cat.dot}` }}
                     onClick={() => onPickEvent(ev)}
+                    title={ev.title}
+                    onMouseEnter={(e) => setHoverEvent({ ev, x: e.clientX, y: e.clientY })}
+                    onMouseLeave={() => setHoverEvent(null)}
                   >
-                    {ev.title}
+                    <span className="week-allday-pill-title">{ev.title}</span>
                     {ev.rrule && <Icon name="repeat" size={9} />}
                   </button>
                 );
