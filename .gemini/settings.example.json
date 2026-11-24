@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "shared-calendar-local": {
+      "command": "node",
+      "args": [
+        "mcp/node_modules/tsx/dist/cli.mjs",
+        "mcp/src/stdio.ts"
+      ],
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "$GOOGLE_APPLICATION_CREDENTIALS",
+        "FIREBASE_PROJECT_ID": "cisa-cal"
+      },
+      "timeout": 30000,
+      "trust": false
+    }
+  }
+}
