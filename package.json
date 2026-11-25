@@ -17,6 +17,7 @@
     "mcp:deploy:worker": "npm --prefix mcp run deploy:worker"
   },
   "dependencies": {
+    "@sentry/react": "^11.17.0",
     "@tailwindcss/vite": "^4.3.5",
     "firebase": "^13.3.0",
     "ical.js": "^2.2.1",
