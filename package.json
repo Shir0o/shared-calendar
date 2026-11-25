@@ -19,7 +19,7 @@
   "dependencies": {
     "@sentry/react": "^11.17.0",
     "@tailwindcss/vite": "^4.3.5",
-    "firebase": "^13.3.0",
+    "firebase": "^13.4.0",
     "ical.js": "^2.2.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
