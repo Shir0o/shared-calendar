@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/Shir0o/shared-calendar/compare/v1.1.1...v1.2.0) (2026-11-25)
+
+
+### Features
+
+* add production-only Sentry error tracking ([#78](https://github.com/Shir0o/shared-calendar/issues/78)) ([bb37622](https://github.com/Shir0o/shared-calendar/commit/bb3762292a445ef5c1a95c0f929ca0940c829a97))
+* **sentry:** cap error events at 20 per browser session ([200e9c9](https://github.com/Shir0o/shared-calendar/commit/200e9c99e898559159456d15b3bef6597013f332))
+
 ## [1.1.1](https://github.com/Shir0o/shared-calendar/compare/v1.1.0...v1.1.1) (2026-11-22)
 
 
